@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Costa Rica - Mapa Meteorológico Interactivo</title>
+    
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+          
+    <link rel="stylesheet" href="index.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Encabezado de la aplicación -->
+    <header class="app-header">
+        <div class="header-logo">
+            <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="weather-icon-primary"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="4"/></svg>
+            <div class="logo-text">
+                <h1>ClimaCR</h1>
+                <span>Monitoreo en Tiempo Real (IMN)</span>
+            </div>
+        </div>
+        
+        <div class="header-stats">
+            <div class="stat-bubble">
+                <span class="bubble-label">Estaciones Activas</span>
+                <span class="bubble-val" id="total-stations">-</span>
+            </div>
+            <div class="stat-bubble">
+                <span class="bubble-label">Promedio Nacional</span>
+                <span class="bubble-val" id="avg-temp">-</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal -->
+    <main class="main-container">
+        <!-- Mapa Interactivo Leaflet -->
+        <div id="map"></div>
+
+        <!-- Panel Lateral Informativo (Glassmorphism Sidebar) -->
+        <aside class="sidebar" id="station-sidebar">
+            <!-- Vista General (Default) -->
+            <div class="sidebar-default" id="sidebar-default">
+                <h2>Resumen Meteorológico</h2>
+                <p class="section-desc">Selecciona cualquier estación en el mapa para ver los datos detallados en tiempo real.</p>
+                
+                <!-- Pronóstico Diario Oficial (IMN) -->
+                <div class="national-forecast-card" id="national-forecast-card">
+                    <div class="forecast-header">
+                        <div class="forecast-title-wrap">
+                            <span class="forecast-badge">Oficial IMN</span>
+                            <h3>Pronóstico Diario Nacional</h3>
+                        </div>
+                        <!-- Micro-animación de espectro de audio -->
+                        <div class="audio-wave-bars" id="audio-wave-bars">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    
+                    <p class="forecast-date" id="forecast-date">Cargando fecha...</p>
+                    
+                    <!-- Reproductor de Audio Glassmorphic Personalizado -->
+                    <div class="forecast-audio-player">
+                        <button class="audio-play-btn" id="forecast-play-btn" title="Reproducir pronóstico">
+                            <!-- Icono Play (SVG) -->
+                            <svg class="play-icon" viewBox="0 0 24 24" id="audio-svg-play">
+                                <path fill="currentColor" d="M8 5v14l11-7z"/>
+                            </svg>
+                            <!-- Icono Pause (SVG) - oculto por defecto -->
+                            <svg class="pause-icon hidden" viewBox="0 0 24 24" id="audio-svg-pause">
+                                <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                            </svg>
+                        </button>
+                        
+                        <div class="audio-controls-wrap">
+                            <div class="audio-timeline-wrap">
+                                <span class="audio-time-current" id="audio-time-curr">0:00</span>
+                                <input type="range" class="audio-progress" id="audio-progress-slider" min="0" max="100" value="0">
+                                <span class="audio-time-total" id="audio-time-tot">0:00</span>
+                            </div>
+                            
+                            <div class="audio-volume-wrap">
+                                <button class="audio-volume-btn" id="forecast-volume-btn" title="Silenciar">
+                                    <svg viewBox="0 0 24 24" class="volume-icon" id="volume-svg-high">
+                                        <path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                                    </svg>
+                                    <svg viewBox="0 0 24 24" class="volume-icon hidden" id="volume-svg-mute">
+                                        <path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                                    </svg>
+                                </button>
+                                <input type="range" class="audio-volume-slider" id="audio-volume-slider" min="0" max="100" value="80">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Elemento audio nativo oculto -->
+                    <audio id="forecast-native-audio" preload="metadata"></audio>
+                    
+                    <div class="forecast-body">
+                        <p class="forecast-text" id="forecast-text">Cargando pronóstico...</p>
+                    </div>
+                </div>
+
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="card-icon">🔥</div>
+                        <div class="card-details">
+                            <h3>Temp. Máxima</h3>
+                            <span class="card-value" id="max-temp-val">-</span>
+                            <span class="card-sub" id="max-temp-loc">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <div class="card-icon">❄️</div>
+                        <div class="card-details">
+                            <h3>Temp. Mínima</h3>
+                            <span class="card-value" id="min-temp-val">-</span>
+                            <span class="card-sub" id="min-temp-loc">-</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <div class="card-icon">💨</div>
+                        <div class="card-details">
+                            <h3>Viento Máximo</h3>
+                            <span class="card-value" id="max-wind-val">-</span>
+                            <span class="card-sub" id="max-wind-loc">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-source-info">
+                    <h4>Sobre las fuentes de datos</h4>
+                    <p>Los datos provienen en tiempo real del nodo <strong>WIS2.0 (wis2box)</strong> y la red de estaciones automáticas Campbell RTMC del Instituto Meteorológico Nacional de Costa Rica (IMN). Los datos son preliminares y no cuentan con un control de calidad riguroso.</p>
+                    <span class="last-cache-time">Último caché: <span id="last-update-time">Cargando...</span></span>
+                </div>
+            </div>
+
+            <!-- Vista Detallada de Estación (Dashboard Moderno) -->
+            <div class="sidebar-detail hidden" id="sidebar-detail">
+                <button class="btn-close" id="btn-close-sidebar">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+
+                <!-- Cabecera de la Estación (Estilo Banner IMN) -->
+                <div class="station-meta-card-premium">
+                    <div class="meta-top-row">
+                        <span class="badge-premium" id="station-badge">-</span>
+                        <span class="source-tag" id="station-source">-</span>
+                    </div>
+                    <h2 id="det-station-name">-</h2>
+                    <div class="station-geo-details-premium">
+                        <div class="geo-item">Lat: <strong id="det-lat">-</strong></div>
+                        <div class="geo-item">Lon: <strong id="det-lon">-</strong></div>
+                        <div class="geo-item">Alt: <strong id="det-alt">-</strong> msnm</div>
+                    </div>
+                </div>
+
+                <!-- Panel: Temperatura Actual y Gráfico -->
+                <div class="weather-panel-card temp-panel-premium">
+                    <div class="panel-header">
+                        <span>Temperatura</span>
+                        <span class="panel-icon">🌡️</span>
+                    </div>
+                    <div class="panel-main-temp">
+                        <span class="temp-big-num" id="det-temp">-</span><span class="temp-big-deg">°C</span>
+                    </div>
+                    
+                    <!-- Canvas para Gráfico Horario de Temperatura -->
+                    <div class="chart-wrapper">
+                        <span class="chart-label">Promedio Horario de Temperatura (°C)</span>
+                        <div class="chart-container">
+                            <canvas id="temp-hourly-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Extremas del Día -->
+                    <div class="extremes-grid">
+                        <div class="extreme-box max">
+                            <span class="ext-label">Máxima de Hoy</span>
+                            <strong class="ext-val" id="det-temp-max">-</strong>
+                        </div>
+                        <div class="extreme-box min">
+                            <span class="ext-label">Mínima de Hoy</span>
+                            <strong class="ext-val" id="det-temp-min">-</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel: Viento Actual e Interactivo -->
+                <div class="weather-panel-card wind-panel-premium">
+                    <div class="panel-header">
+                        <span>Viento</span>
+                        <span class="panel-icon">💨</span>
+                    </div>
+                    
+                    <div class="wind-dashboard-body">
+                        <div class="wind-numbers-col">
+                            <div class="wind-stat-block">
+                                <span class="wind-label">Velocidad Actual</span>
+                                <strong class="wind-value" id="det-wind-speed">-</strong>
+                            </div>
+                            <div class="wind-stat-block" id="det-wind-gust-container">
+                                <span class="wind-label">Velocidad Máxima</span>
+                                <strong class="wind-value max-gust" id="det-wind-gust">-</strong>
+                            </div>
+                        </div>
+
+                        <!-- Brújula Giratoria -->
+                        <div class="compass-wrapper">
+                            <div class="compass-dial">
+                                <span class="dial-cardinal n">N</span>
+                                <span class="dial-cardinal ne">NE</span>
+                                <span class="dial-cardinal e">E</span>
+                                <span class="dial-cardinal se">SE</span>
+                                <span class="dial-cardinal s">S</span>
+                                <span class="dial-cardinal sw">SO</span>
+                                <span class="dial-cardinal w">O</span>
+                                <span class="dial-cardinal nw">nw</span>
+                                <div class="compass-needle-premium" id="det-compass-needle"></div>
+                            </div>
+                            <div class="compass-heading" id="det-wind-dir-deg">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel: Lluvia y Acumuladores -->
+                <div class="weather-panel-card rain-panel-premium">
+                    <div class="panel-header">
+                        <span>Precipitación</span>
+                        <span class="panel-icon">🌧️</span>
+                    </div>
+                    
+                    <!-- Canvas para Gráfico Horario de Lluvia -->
+                    <div class="chart-wrapper">
+                        <span class="chart-label">Total de Lluvia Horaria (mm)</span>
+                        <div class="chart-container">
+                            <canvas id="rain-hourly-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Acumuladores del Día y Ayer -->
+                    <div class="rain-metrics-grid">
+                        <div class="rain-metric-box">
+                            <span class="rain-lbl">Precip. Últ. Hora</span>
+                            <strong class="rain-val" id="det-rain-last-hour">-</strong>
+                        </div>
+                        <div class="rain-metric-box">
+                            <span class="rain-lbl">Lluvia acumulada</span>
+                            <span class="rain-sub">Desde las 7 a.m.</span>
+                            <strong class="rain-val highlight" id="det-rain-today">-</strong>
+                        </div>
+                        <div class="rain-metric-box" id="det-rain-yesterday-container">
+                            <span class="rain-lbl">Lluvia ayer</span>
+                            <span class="rain-sub">7am de ayer a 7am</span>
+                            <strong class="rain-val" id="det-rain-yesterday">-</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fila: Rocío y Humedad -->
+                <div class="sensor-double-row">
+                    <!-- Punto Rocío (Naranja) -->
+                    <div class="sensor-card dewpoint">
+                        <div class="sensor-header">
+                            <span>Temp. Rocío</span>
+                            <span>🍂</span>
+                        </div>
+                        <strong class="sensor-val" id="det-dew">-</strong>
+                    </div>
+
+                    <!-- Humedad Relativa (Cian/Amarillo) -->
+                    <div class="sensor-card humidity">
+                        <div class="sensor-header">
+                            <span>Humedad Rel.</span>
+                            <span>💧</span>
+                        </div>
+                        <div class="humidity-val-row">
+                            <strong class="sensor-val" id="det-humidity">-</strong>
+                        </div>
+                        <div class="humidity-progress-bar">
+                            <div class="humidity-progress-fill" id="det-humidity-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel Diagnóstico (Presión, etc.) -->
+                <div class="weather-panel-card diagnostics-panel" id="det-pressure-container">
+                    <div class="panel-header">
+                        <span>Diagnóstico e Instrumentos</span>
+                        <span class="panel-icon">📊</span>
+                    </div>
+                    <div class="diagnostics-row">
+                        <span class="diag-label">Presión Atmosférica</span>
+                        <strong class="diag-val" id="det-pressure">-</strong>
+                    </div>
+                </div>
+
+                <!-- Sello de Actualización -->
+                <div class="update-stamp-premium">
+                    Los datos observados se actualizaron por última vez a las<br>
+                    <strong id="det-update-time">-</strong>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="app.js"></script>
+</body>
+</html>

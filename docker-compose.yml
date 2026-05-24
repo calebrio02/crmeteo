@@ -1,0 +1,35 @@
+
+services:
+  frontend:
+    image: nginx:alpine
+    container_name: cr_weather_frontend
+    ports:
+      - "8090:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - weather_net
+    restart: always
+
+  backend:
+    build: ./backend
+    container_name: cr_weather_backend
+    expose:
+      - "8000"
+    volumes:
+      - weather_data:/app/data
+    networks:
+      - weather_net
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: always
+
+volumes:
+  weather_data:
+
+networks:
+  weather_net:
+    driver: bridge
