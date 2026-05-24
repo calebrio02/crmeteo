@@ -93,6 +93,47 @@ class SardinalHTMLParser(HTMLParser):
             self.current_row.append(self.temp_data.strip().replace('\xa0', ' '))
             self.temp_data = ""
 
+def _parse_fecha(fecha_str: str) -> str:
+    """Devuelve la fecha más reciente entre varias cadenas de fecha del IMN.
+    
+    Formatos esperados:
+    - "23/05/2026 09:12:15 p. m." (Tabla Actuales)
+    - "23/05/2026 09:00 p. m." (Tabla Horarios)
+    - "23/05/2026" (Tabla Promedio 2 min)
+    """
+    import re
+    import datetime
+    
+    fechas = [f for f in fecha_str if f]
+    if not fechas:
+        return ""
+    
+    def parse(fecha):
+        fecha = fecha.strip()
+        # "23/05/2026 09:12:15 p. m."
+        m = re.match(r'(\d{2}/\d{2}/\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)\s*(am|p\.?\s*m\.?|a\.?\s*p\.)?', fecha, re.IGNORECASE)
+        if m:
+            date_part, time_part, period = m.groups()
+            dt = datetime.datetime.strptime(date_part, "%d/%m/%Y")
+            if time_part:
+                fmt = "%H:%M:%S" if ":" == time_part[2] and len(time_part) > 5 else "%H:%M"
+                h = int(time_part.split(":")[0])
+                if period and "p" in period.lower():
+                    h = (h % 12) + 12
+                dt = dt.replace(hour=h, minute=int(time_part.split(":")[1]))
+            return dt
+        # "23/05/2026"
+        m = re.match(r'(\d{2}/\d{2}/\d{4})', fecha)
+        if m:
+            return datetime.datetime.strptime(m.group(1), "%d/%m/%Y")
+        return None
+    
+    parsed = [p for p in (parse(f) for f in fechas) if p]
+    if parsed:
+        return sorted(parsed, reverse=True)[0].strftime("%d/%m/%Y %H:%M:%S")
+    return ""
+
+
 # -------------------------------------------------------------
 # Funciones Auxiliares de Fetch y Parseo
 # -------------------------------------------------------------
@@ -323,7 +364,12 @@ def scrape_html_station(slug: str, name: str, coords: list) -> dict:
         
     if actuales:
         latest_actuales = actuales[0]
-        station_data["last_update"] = latest_actuales.get("Fecha", "")
+        fecha_actuales = latest_actuales.get("Fecha", "")
+        if not fecha_actuales:
+            fecha_promedio = promedios[0].get("Fecha", "") if promedios and len(promedios[0]) > 0 else ""
+            if fecha_promedio:
+                fecha_actuales = fecha_promedio
+        station_data["last_update"] = fecha_actuales
         
         vmax_val = latest_actuales.get("Vmax") or latest_actuales.get("Racha")
         if vmax_val:
@@ -542,7 +588,7 @@ async def fetch_all_weather_data():
 # Tarea de fondo programada (Loop cada 1 minuto)
 # -------------------------------------------------------------
 async def weather_scheduler():
-    logger.info("Iniciando bucle de recolección en segundo plano (cada 1 minuto)...")
+    logger.info("Iniciando bucle de recolección en segundo plano (cada 30 segundos)...")
     # Dormir el primer minuto porque ya hicimos la recolección inicial en startup_event
     await asyncio.sleep(60)
     while True:
@@ -550,7 +596,7 @@ async def weather_scheduler():
             await fetch_all_weather_data()
         except Exception as e:
             logger.error(f"Error en bucle de recolección: {e}")
-        await asyncio.sleep(60)  # 1 minuto = 60 segundos
+        await asyncio.sleep(30)  # 30 segundos
 
 # -------------------------------------------------------------
 # Eventos de FastAPI
