@@ -1,0 +1,10 @@
+FROM nginx:alpine
+
+# Copiar el frontend estático
+COPY ./frontend /usr/share/nginx/html
+
+# Copiar la configuración de Nginx
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf
+
+# Asegurar permisos correctos de lectura para el usuario nginx
+RUN chmod -R 755 /usr/share/nginx/html
