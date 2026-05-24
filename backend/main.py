@@ -187,104 +187,176 @@ def scrape_national_forecast() -> dict:
         }
 
 HTML_STATIONS = [
-    ("sardinal", "Estación Sardinal de Carrillo (Guanacaste)", [-85.6117, 10.5310]),
-    ("alfredovolio", "Estación Alfredo Volio Mata (Cartago)", [-83.9000, 9.9000]),
-    ("altamira", "Estación Altamira (Buenos Aires)", [-83.0500, 9.0300]),
-    ("aranjuez", "Estación Aranjuez, Pitahaya (Puntarenas)", [-84.8167, 9.9833]),
-    ("arunachala", "Estación Arunachala (Pérez Zeledón)", [-83.7000, 9.3667]),
-    ("balsa", "Estación Balsa (San Ramón)", [-84.4500, 10.0833]),
-    ("barrancas", "Estación Barrancas (El Guarco)", [-83.9167, 9.8000]),
-    ("belen", "Estación Belén (Heredia)", [-84.1833, 9.9833]),
-    ("betania", "Estación Betania, Cutris (San Carlos)", [-84.4000, 10.5000]),
-    ("bijagua", "Estación Coopeguanacaste, Bijagua (Upala)", [-85.0500, 10.7333]),
-    ("burio", "Estación Cerro Burío (Aserrí)", [-84.0833, 9.8333]),
-    ("cantagallo", "Estación Cantagallo (Pococí)", [-83.7833, 10.2667]),
-    ("catie", "Estación CATIE (Turrialba)", [-83.6500, 9.8833]),
-    ("cartagotec", "Estación TEC Campus Cartago", [-83.9120, 9.8540]),
-    ("cedral", "Estación Cerro Cedral (Escazú)", [-84.1333, 9.8667]),
-    ("chirripo", "Estación Cerro Chirripó (Pérez Zeledón)", [-83.5000, 9.4833]),
+    ("Aeropzn", "Estación Aeródromo Zona Norte San Carlos - Alajuela", [-84.4700, 10.5200]),
+    ("Aitbp09", "Estación Aeropuerto Tobías Bolaños 09 Pavas - San José", [-84.0800, 9.9300]),
+    ("Aitbp09qnh", "Estación Aeropuerto Tobías Bolaños 09 (DA) Pavas - San José", [-84.0800, 9.9300]),
+    ("AlfredoVolio", "Estación Alfredo Volio Mata (Cartago)", [-83.9000, 9.9000]),
+    ("Altamira", "Estación Altamira (Buenos Aires)", [-83.0500, 9.0300]),
+    ("Aranjuez", "Estación Aranjuez, Pitahaya (Puntarenas)", [-84.8167, 9.9833]),
+    ("Arunachala", "Estación Arunachala (Pérez Zeledón)", [-83.7000, 9.3667]),
+    ("Balsa", "Estación Balsa (San Ramón)", [-84.4500, 10.0833]),
+    ("Barrancas", "Estación Barrancas (El Guarco)", [-83.9167, 9.8000]),
+    ("Belen", "Estación Belén (Heredia)", [-84.1833, 9.9833]),
+    ("Betania", "Estación Betania, Cutris (San Carlos)", [-84.4000, 10.5000]),
+    ("BibliotecaMSJ", "Estación Biblioteca RAAG, MSJ Central San José - San José", [-84.0800, 9.9300]),
+    ("Bijagua", "Estación Coopeguanacaste, Bijagua (Upala)", [-85.0500, 10.7333]),
+    ("Brasilia", "Estación Finca Brasilia Upala - Alajuela", [-84.2800, 10.0200]),
+    ("Burio", "Estación Cerro Burío (Aserrí)", [-84.0833, 9.8333]),
+    ("CM", "Estación Cerro Buenavista Pérez Zeledón - San José", [-83.7500, 9.3500]),
+    ("CTPlasuiza", "Estación Colegio Técnico Profesional, La Suiza Turrialba - Cartago", [-83.6800, 9.9000]),
+    ("Canalete", "Estación Río Zapote, Canalete (Estación hidrológica) Upala - Alajuela", [-84.2800, 10.0200]),
+    ("Cantagallo", "Estación Cantagallo (Pococí)", [-83.7833, 10.2667]),
+    ("Cartago", "Estación ITCR, Cartago Cartago - Cartago", [-83.9200, 9.8600]),
+    ("Catie", "Estación CATIE (Turrialba)", [-83.6500, 9.8833]),
+    ("Cedral", "Estación Cerro Cedral (Escazú)", [-84.1333, 9.8667]),
+    ("Chiles", "Estación Los Chiles Los Chiles - Alajuela", [-84.7100, 11.0300]),
+    ("Chirripo", "Estación Cerro Chirripó (Pérez Zeledón)", [-83.5000, 9.4833]),
+    ("Cigefi", "Estación CIGEFI (Montes de Oca)", [-84.0500, 9.9333]),
+    ("Cipanci", "Estación Refugio Cipanci (Cañas)", [-85.1167, 10.1833]),
+    ("Ciudadninos", "Estación Ciudad de los Niños (Cartago)", [-83.9167, 9.8667]),
+    ("Coopevega", "Estación Coopevega (San Carlos)", [-84.3500, 10.6000]),
+    ("Copalchi", "Estación Copalchí (Peñas Blancas)", [-84.6000, 10.4000]),
+    ("Coto49", "Estación Coto 49 (Corredores)", [-82.9686, 8.6312]),
+    ("CrucesOET", "Estación Las Cruces OET Coto Brus - Puntarenas", [-84.8400, 9.9800]),
+    ("Damas", "Estación Finca Damas (Quepos)", [-84.1667, 9.4333]),
+    ("Delicias", "Estación Las Delicias San Carlos - Alajuela", [-84.4500, 10.5500]),
+    ("Elcarmen", "Estación Finca El Carmen (Siquirres)", [-83.5167, 10.1000]),
+    ("FABIO", "Estación Fabio Baudrit Central - Alajuela", [-84.2800, 10.0200]),
+    ("Fraijanes", "Estación Laguna Fraijanes (Alajuela)", [-84.1833, 10.1333]),
+    ("FrutadePan", "Estación Fruta de Pan (Pococí)", [-83.7833, 10.2667]),
+    ("Garita", "Estación RECOPE La Garita La Garita - Alajuela", [-84.2800, 10.0200]),
+    ("Garza", "Estación Barco Quebrado - Garza (Nosara)", [-85.6500, 9.9000]),
+    ("GavilanCanta", "Estación Gavilán Canta, Bratsi (Talamanca)", [-82.9500, 9.6500]),
+    ("Giro", "Estación Cafetalera El Giro (San Vito)", [-82.9667, 8.7833]),
+    ("Gmastate", "Estación Guayabal, Mastate Orotina - Alajuela", [-84.2800, 10.0200]),
+    ("Greggund", "Estación Reserva Biológica Greg Gund Golfito - Puntarenas", [-84.8400, 9.9800]),
+    ("Guapiles", "Estación Pococí Guápiles (Limón)", [-83.7833, 10.2167]),
+    ("Guatuso", "Estación ASADA San Rafael de Guatuso", [-84.8167, 10.7167]),
+    ("Guayabo", "Estación ASADA Guayabo (Bagaces)", [-85.2500, 10.6667]),
+    ("Herradura", "Estación Muelle Herradura (Garabito)", [-84.6333, 9.6500]),
+    ("Hidroelectrica", "Estación Hidroeléctrica El General Sarapiquí - Heredia", [-84.1200, 10.0000]),
+    ("Hitoy", "Estación Hitoy Cerere Matama - Limón", [-83.0300, 10.0000]),
+    ("Horquetas", "Estación Horquetas (Sarapiquí)", [-84.0500, 10.3500]),
+    ("Huacalito", "Estación Cerro Huacalito (Carrillo)", [-85.6117, 10.5186]),
+    ("Invenio", "Estación Universidad INVENIO (Cañas)", [-85.1167, 10.3833]),
+    ("Iztaru", "Estación Iztarú (La Unión)", [-83.9833, 9.9000]),
+    ("Jaboncillal", "Estación Jaboncillal (Goicoechea)", [-84.0167, 9.9667]),
+    ("Jimenez", "Estación Finca El Patio (Puerto Jiménez)", [-83.3000, 8.5333]),
+    ("JuanVinas", "Estación Maravilla (Juan Viñas)", [-83.7167, 9.8833]),
+    ("Juco", "Estación Cerro Jucó (Paraíso)", [-83.7833, 9.8333]),
+    ("Judicial", "Estación Ciudad Judicial Flores - Heredia", [-84.1200, 10.0000]),
+    ("LaCeiba", "Estación Finca La Ceiba (Nicoya)", [-85.3175, 10.1111]),
+    ("LaCruz", "Estación La Cruz (Guanacaste)", [-85.6833, 11.0667]),
+    ("LasBrisas", "Estación Las Brisas, Sabalito Coto Brus - Puntarenas", [-84.8400, 9.9800]),
+    ("Laurel", "Estación Laurel (Corredores)", [-82.9167, 8.4333]),
+    ("Liberia", "Estación Aeropuerto Daniel Oduber 07 Liberia - Guanacaste", [-85.4100, 10.0200]),
+    ("Liberia2", "Estación Aeropuerto Daniel Oduber 07 (DA) Liberia - Guanacaste", [-85.4100, 10.0200]),
+    ("Liberia25", "Estación Aeropuerto Daniel Oduber 25 Liberia - Guanacaste", [-85.4100, 10.0200]),
+    ("LindaVistadn", "Estación Dulce Nombre, Cartago Cartago - Cartago", [-83.9200, 9.8600]),
+    ("Llanogrande", "Estación Llano Grande (Cartago)", [-83.8833, 9.9167]),
+    ("Loslotes", "Estación Finca Los Lotes (La Unión)", [-83.9833, 9.9167]),
+    ("Lucha", "Estación La Lucha León Cortes - San José", [-84.0800, 9.9300]),
+    ("MGuayabo", "Estación Monumento Nacional Guayabo Turrialba - Cartago", [-83.6800, 9.9000]),
+    ("Macaya", "Estación Finca Los Macaya (Goicoechea)", [-84.0333, 9.9500]),
+    ("Mangarica", "Estación Mangarica (Liberia)", [-85.4500, 10.6000]),
+    ("Manzanillo", "Estación Manzanillo (Talamanca)", [-82.6500, 9.6333]),
+    ("MariaLuisa", "Estación María Luisa, Río Banano Central - Limón", [-83.0300, 10.0000]),
+    ("Maritza", "Estación Maritza, Volcán Orosi (La Cruz)", [-85.5000, 10.9500]),
+    ("Mawamba", "Estación Hotel Mawamba Tortuguero", [-83.5167, 10.5333]),
+    ("Mojica", "Estación Hacienda Mojica (Bagaces)", [-85.2833, 10.4167]),
+    ("Montecarlo", "Estación Montecarlo (Pérez Zeledón)", [-83.7500, 9.3833]),
+    ("Montezuma", "Estación Palo Alto, Montezuma Cañas - Guanacaste", [-85.4500, 10.6300]),
+    ("Msagrada", "Estación Montaña Sagrada (Deslizamiento Aguas Zarcas) La Palmera - Alajuela", [-84.2800, 10.0200]),
+    ("MuniStaAna", "Estación CRRV, Plantel Municipal Santa Ana - San José", [-84.0800, 9.9300]),
+    ("MuniStaAnaBosques", "Estación Residencial Bosques, Santa Ana Santa Ana - San José", [-84.0800, 9.9300]),
+    ("MuniStaAnaParaiso", "Estación Residencial Paraíso, Piedades Santa Ana - San José", [-84.0800, 9.9300]),
+    ("Museo", "Estación Museo Finca 6 Osa - Puntarenas", [-84.8400, 9.9800]),
+    ("Nandayure", "Estación Santa Rita Nandayure - Guanacaste", [-85.4500, 10.6300]),
+    ("Naranjo", "Estación San Miguel Naranjo - Alajuela", [-84.2800, 10.0200]),
+    ("Negritos", "Estación Puesto Negritos, P.N Palo Verde Bagaces - Guanacaste", [-85.4500, 10.6300]),
+    ("Neotropica", "Estación Fundación Neotrópica (Osa)", [-83.5167, 8.7000]),
+    ("Nicoya", "Estación Nicoya (Guanacaste)", [-85.4500, 10.1500]),
+    ("Ochomogo", "Estación RECOPE Ochomogo (Cartago)", [-83.9333, 9.9000]),
+    ("Oroceiba", "Estación Oroceiba (Orotina)", [-84.5167, 9.9167]),
+    ("Pacayas", "Estación Pacayas (Alvarado)", [-83.8000, 9.9000]),
+    ("Paquera", "Estación Paquera (Puntarenas)", [-84.9333, 9.8167]),
+    ("Pastora", "Estación Escuela La Pastora (SAT) Turrialba - Cartago", [-83.7300, 10.0200]),
+    ("Patio", "Estación Patio de Agua Coronado - San José", [-84.0800, 9.9300]),
+    ("Pavas", "Estación Aeropuerto Tobías Bolaños 27 Pavas - San José", [-84.0800, 9.9300]),
+    ("Pavas2", "Estación Aeropuerto Tobías Bolaños 27 (DA) Pavas - San José", [-84.0800, 9.9300]),
+    ("Pilangosta", "Estación ASADA Pilangosta (Hojancha)", [-85.4167, 9.9833]),
+    ("Pindeco", "Estación PINDECO (Buenos Aires)", [-83.3333, 9.1667]),
+    ("Pinilla", "Estación San José, Pinilla (Santa Cruz)", [-85.8333, 10.2667]),
+    ("PlantelMSJ", "Estación Plantel MSJ Central San José - San José", [-84.0800, 9.9300]),
+    ("Poas", "Estación Laguna, Volcán Poás Poás - Alajuela", [-84.2300, 10.2000]),
+    ("Potrero", "Estación Sartalillo, Potrero Cerrado Oreamuno - Cartago", [-83.9200, 9.8600]),
+    ("Pozoazul", "Estación Hotel Pozo Azul (Sarapiquí)", [-84.0167, 10.4167]),
+    ("Ptovargas", "Estación Puerto Vargas Talamanca - Limón", [-83.3000, 9.5500]),
+    ("Puntarenas", "Estación Puntarenas (Puntarenas)", [-84.8384, 9.9764]),
+    ("PuraVida", "Estación Dulce Nombre Nicoya - Guancaste", [-84.0500, 9.9300]),
+    ("Rainforest", "Estación Rain Forest, Braulio Carrillo", [-83.9500, 10.1833]),
+    ("Rebusca", "Estación La Rebusca Sarapiquí - Heredia", [-84.0000, 10.3000]),
+    ("Rioclaro", "Estación Río Claro (Golfito)", [-83.0500, 8.6833]),
+    ("Roxana", "Estación Caramba Farms, Roxana Pococí - Limón", [-83.6700, 10.2300]),
+    ("STB", "Estación Santa Bárbara Santa Bárbara - Heredia", [-84.1200, 10.0000]),
+    ("SanGerardo", "Estación San Gerardo (Sarapiquí)", [-83.8000, 10.3500]),
+    ("SanMateo", "Estación San Mateo (Alajuela)", [-84.5500, 9.9500]),
+    ("SanVicente", "Estación San Vicente, Ciudad Quesada San Carlos - Alajuela", [-83.6800, 10.0500]),
+    ("SanVito", "Estación Cafetalera El Indio San Vito - Puntarenas", [-84.8400, 9.9800]),
+    ("Sangabriel", "Estación ASADA San Gabriel Desamparados - San José", [-84.1800, 9.8900]),
+    ("Sanjorge", "Estación Saint George (San Jorge)", [-84.7167, 10.9833]),
+    ("Sarapiqui", "Estación Comando Puerto Viejo Sarapiquí - Heredia", [-84.1200, 10.0000]),
+    ("Sardinal", "Estación Sardinal de Carrillo (Guanacaste)", [-85.6117, 10.5310]),
+    ("SelvaOET", "Estación La Selva OET Sarapiquí - Heredia", [-84.0300, 10.4300]),
+    ("Sepecue", "Estación Sepecue, Telire (Talamanca)", [-82.9833, 9.5167]),
+    ("SitioLaCruz", "Estación Sitio La Cruz Bagaces - Guanacaste", [-85.4500, 10.6300]),
+    ("Sitiomata", "Estación Sitio Mata (Turrialba)", [-83.6833, 9.8333]),
+    ("Sixaola", "Estación Sixaola (Limón)", [-82.6338, 9.5277]),
+    ("StaClara", "Estación ITCR, Santa Clara San Carlos - Alajuela", [-84.4700, 10.5200]),
+    ("StaElena", "Estación Santa Elena La Cruz - Guanacaste", [-85.4500, 10.6300]),
+    ("StaMarta", "Estación ASADA Santa Marta Hojancha - Guanacaste", [-85.4500, 10.6300]),
+    ("Stacecilia", "Estación Santa Cecilia La Cruz - Guanacaste", [-85.4500, 10.6300]),
+    ("Stacruz", "Estación UCR Santa Cruz (Guanacaste)", [-85.5861, 10.2628]),
+    ("Taboga", "Estación Hacienda Taboga (Cañas)", [-85.1500, 10.3500]),
+    ("Tarrazu", "Estación El Rodeo Tarrazú - San José", [-84.0800, 9.9300]),
+    ("Tenorio", "Estación Volcán Tenorio (Guatuso)", [-85.0167, 10.6667]),
+    ("Tirimbina", "Estación El Bosque, Rio Tirimbina", [-84.1167, 10.4167]),
+    ("UPaz", "Estación Universidad para la Paz (Mora)", [-84.2500, 9.9167]),
+    ("UTN", "Estación UTN, Balsa de Atenas Atenas - Alajuela", [-84.2800, 10.0200]),
+    ("Vblanca", "Estación Hotel Villa Blanca San Ramón - Alajueja", [-84.0500, 9.9300]),
+    ("Virazu", "Estación Volcán Irazú Oreamuno - Cartago", [-83.9200, 9.8600]),
+    ("Vturri", "Estación Volcán Turrialba Turrialba - Cartago", [-83.6800, 9.9000]),
     ("chitaria", "Estación Cerro Chitaria (Santa Ana)", [-84.1833, 9.9333]),
-    ("cigefi", "Estación CIGEFI (Montes de Oca)", [-84.0500, 9.9333]),
-    ("cipanci", "Estación Refugio Cipanci (Cañas)", [-85.1167, 10.1833]),
-    ("ciudadjudicial", "Estación Ciudad Judicial (Flores)", [-84.1500, 10.0000]),
-    ("ciudadninos", "Estación Ciudad de los Niños (Cartago)", [-83.9167, 9.8667]),
-    ("coopevega", "Estación Coopevega (San Carlos)", [-84.3500, 10.6000]),
-    ("copalchi", "Estación Copalchí (Peñas Blancas)", [-84.6000, 10.4000]),
-    ("coto49", "Estación Coto 49 (Corredores)", [-82.9686, 8.6312]),
-    ("damas", "Estación Finca Damas (Quepos)", [-84.1667, 9.4333]),
+    ("coco", "Estación Aeropuerto Juan Santamaría 07 Central de Alajuela - Alajuela", [-84.2100, 10.0000]),
+    ("coco25", "Estación Aeropuerto Juan Santamaría 25 Central de Alajuela - Alajuela", [-84.2100, 10.0000]),
+    ("cocomp", "Estación Aeropuerto Juan Santamaría MP Central de Alajuela - Alajuela", [-84.2100, 10.0000]),
+    ("cocoqnh07", "Estación Aeropuerto Juan Santamaría 07 (DA) Central de Alajuela - Alajuela", [-84.2100, 10.0000]),
+    ("cocoqnh25", "Estación Aeropuerto Juan Santamaría 25 (DA) Central de Alajuela - Alajuela", [-84.2100, 10.0000]),
     ("earth", "Estación EARTH (Guácimo)", [-83.6000, 10.2167]),
-    ("elcarmen", "Estación Finca El Carmen (Siquirres)", [-83.5167, 10.1000]),
     ("fortuna", "Estación ADIFORT, La Fortuna (San Carlos)", [-84.6470, 10.4717]),
-    ("fraijanes", "Estación Laguna Fraijanes (Alajuela)", [-84.1833, 10.1333]),
-    ("frutadepan", "Estación Fruta de Pan (Pococí)", [-83.7833, 10.2667]),
-    ("garza", "Estación Barco Quebrado - Garza (Nosara)", [-85.6500, 9.9000]),
-    ("gavilancanta", "Estación Gavilán Canta, Bratsi (Talamanca)", [-82.9500, 9.6500]),
-    ("giro", "Estación Cafetalera El Giro (San Vito)", [-82.9667, 8.7833]),
-    ("guapiles", "Estación Pococí Guápiles (Limón)", [-83.7833, 10.2167]),
-    ("guatuso", "Estación ASADA San Rafael de Guatuso", [-84.8167, 10.7167]),
-    ("guayabo", "Estación ASADA Guayabo (Bagaces)", [-85.2500, 10.6667]),
-    ("herradura", "Estación Muelle Herradura (Garabito)", [-84.6333, 9.6500]),
-    ("horquetas", "Estación Horquetas (Sarapiquí)", [-84.0500, 10.3500]),
-    ("huacalito", "Estación Cerro Huacalito (Carrillo)", [-85.6117, 10.5186]),
-    ("invenio", "Estación Universidad INVENIO (Cañas)", [-85.1167, 10.3833]),
-    ("iztaru", "Estación Iztarú (La Unión)", [-83.9833, 9.9000]),
-    ("jaboncillal", "Estación Jaboncillal (Goicoechea)", [-84.0167, 9.9667]),
-    ("jimenez", "Estación Finca El Patio (Puerto Jiménez)", [-83.3000, 8.5333]),
-    ("juanvinas", "Estación Maravilla (Juan Viñas)", [-83.7167, 9.8833]),
-    ("juco", "Estación Cerro Jucó (Paraíso)", [-83.7833, 9.8333]),
-    ("laceiba", "Estación Finca La Ceiba (Nicoya)", [-85.3175, 10.1111]),
-    ("lacruz", "Estación La Cruz (Guanacaste)", [-85.6833, 11.0667]),
-    ("laligia", "Estación La Ligia (Parrita)", [-84.3333, 9.5167]),
-    ("lalucha", "Estación La Lucha (León Cortés)", [-84.0000, 9.7167]),
-    ("lapastora", "Estación Escuela La Pastora (Turrialba)", [-83.7333, 10.0167]),
-    ("larebusca", "Estación La Rebusca (Sarapiquí)", [-84.0000, 10.3000]),
-    ("lasdelicias", "Estación Las Delicias (San Carlos)", [-84.4500, 10.5500]),
-    ("laurel", "Estación Laurel (Corredores)", [-82.9167, 8.4333]),
-    ("llanogrande", "Estación Llano Grande (Cartago)", [-83.8833, 9.9167]),
-    ("loschiles", "Estación Los Chiles (Alajuela)", [-84.7117, 11.0317]),
-    ("loslotes", "Estación Finca Los Lotes (La Unión)", [-83.9833, 9.9167]),
-    ("macaya", "Estación Finca Los Macaya (Goicoechea)", [-84.0333, 9.9500]),
-    ("mangarica", "Estación Mangarica (Liberia)", [-85.4500, 10.6000]),
-    ("manzanillo", "Estación Manzanillo (Talamanca)", [-82.6500, 9.6333]),
-    ("maritza", "Estación Maritza, Volcán Orosi (La Cruz)", [-85.5000, 10.9500]),
-    ("mawamba", "Estación Hotel Mawamba Tortuguero", [-83.5167, 10.5333]),
-    ("mojica", "Estación Hacienda Mojica (Bagaces)", [-85.2833, 10.4167]),
-    ("montecarlo", "Estación Montecarlo (Pérez Zeledón)", [-83.7500, 9.3833]),
-    ("neotropica", "Estación Fundación Neotrópica (Osa)", [-83.5167, 8.7000]),
-    ("nicoya", "Estación Nicoya (Guanacaste)", [-85.4500, 10.1500]),
-    ("ochomogo", "Estación RECOPE Ochomogo (Cartago)", [-83.9333, 9.9000]),
-    ("oroceiba", "Estación Oroceiba (Orotina)", [-84.5167, 9.9167]),
-    ("pacayas", "Estación Pacayas (Alvarado)", [-83.8000, 9.9000]),
-    ("paquera", "Estación Paquera (Puntarenas)", [-84.9333, 9.8167]),
-    ("pilangosta", "Estación ASADA Pilangosta (Hojancha)", [-85.4167, 9.9833]),
-    ("pindeco", "Estación PINDECO (Buenos Aires)", [-83.3333, 9.1667]),
-    ("pinilla", "Estación San José, Pinilla (Santa Cruz)", [-85.8333, 10.2667]),
-    ("pozoazul", "Estación Hotel Pozo Azul (Sarapiquí)", [-84.0167, 10.4167]),
-    ("puntarenas", "Estación Puntarenas (Puntarenas)", [-84.8384, 9.9764]),
-    ("rainforest", "Estación Rain Forest, Braulio Carrillo", [-83.9500, 10.1833]),
-    ("rioclaro", "Estación Río Claro (Golfito)", [-83.0500, 8.6833]),
-    ("sangerardo", "Estación San Gerardo (Sarapiquí)", [-83.8000, 10.3500]),
-    ("sanjorge", "Estación Saint George (San Jorge)", [-84.7167, 10.9833]),
-    ("sanmateo", "Estación San Mateo (Alajuela)", [-84.5500, 9.9500]),
-    ("stacruz", "Estación UCR Santa Cruz (Guanacaste)", [-85.5861, 10.2628]),
-    ("santarosa", "Estación Santa Rosa (La Cruz)", [-85.6167, 10.8333]),
-    ("sepecue", "Estación Sepecue, Telire (Talamanca)", [-82.9833, 9.5167]),
-    ("sitiomata", "Estación Sitio Mata (Turrialba)", [-83.6833, 9.8333]),
-    ("sixaola", "Estación Sixaola (Limón)", [-82.6338, 9.5277]),
+    ("laGuinea", "Estación Miel, La Guinea Carrillo - Guanacaste", [-85.4500, 10.6300]),
+    ("ligia", "Estación La Ligia Parrita - Puntarenas", [-84.3300, 9.5200]),
+    ("limon", "Estación Aeropuerto de Limón Central - Limón", [-83.1300, 9.9900]),
+    ("paloverde", "Estación El Corral, Palo Verde Bagaces - Guanacaste", [-85.2500, 10.6000]),
+    ("quepos", "Estación Marina Pez Vela Quepos - Puntarenas", [-84.3300, 9.4200]),
+    ("santalucia", "Estación Santa Lucía Barva - Heredia", [-84.1200, 10.0000]),
+    ("starosa", "Estación Santa Rosa La Cruz - Guanacaste", [-85.6500, 10.9000]),
     ("tablazo", "Estación Altos Tablazo, Higuito", [-84.0500, 9.8333]),
-    ("taboga", "Estación Hacienda Taboga (Cañas)", [-85.1500, 10.3500]),
-    ("tenorio", "Estación Volcán Tenorio (Guatuso)", [-85.0167, 10.6667]),
-    ("tirimbina", "Estación El Bosque, Rio Tirimbina", [-84.1167, 10.4167]),
-    ("turrialba", "Estación Turrialba Centro (Cartago)", [-83.6833, 9.9000]),
+    ("turri", "Estación Turrialba Centro Turrialba - Cartago", [-83.6800, 9.9000]),
     ("upala", "Estación Upala (Alajuela)", [-85.0333, 10.9000]),
-    ("upaz", "Estación Universidad para la Paz (Mora)", [-84.2500, 9.9167])
+    ("upaz", "Estación Universidad para la Paz (Mora)", [-84.2500, 9.9167]),
 ]
 
 def scrape_html_station(slug: str, name: str, coords: list) -> dict:
-    url = f"https://www.imn.ac.cr/especial/tablas/{slug}.html"
+    # Data tables are in /especial/tablas/{lowercase}.html (iframe format with real data)
+    # Some stations use mixed-case iframe URLs, so try both
+    url = f"https://www.imn.ac.cr/especial/tablas/{slug.lower()}.html"
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-    with urllib.request.urlopen(req, timeout=10) as response:
-        html = response.read().decode('utf-8', errors='ignore')
+    try:
+        with urllib.request.urlopen(req, timeout=8) as response:
+            html = response.read().decode('utf-8', errors='ignore')
+    except Exception:
+        raise ValueError(f"Station not available: {slug}")
 
     parser = SardinalHTMLParser()
     parser.feed(html)
@@ -318,7 +390,7 @@ def scrape_html_station(slug: str, name: str, coords: list) -> dict:
             promedios = v
             break
     if not promedios:
-        promedios = parsed_tables.get("Table_2", []) or parsed_tables.get("Table_1", [])
+        promedios = parsed_tables.get("Tabla de datos_ Promedio", []) or parsed_tables.get("Tabla de datos_ Promedio 2 min", []) or parsed_tables.get("Table_2", []) or parsed_tables.get("Table_1", [])
 
     if promedios:
         latest_promedio = promedios[0]
@@ -360,7 +432,7 @@ def scrape_html_station(slug: str, name: str, coords: list) -> dict:
             actuales = v
             break
     if not actuales:
-        actuales = parsed_tables.get("Tabla de datos: Actuales", [])
+        actuales = parsed_tables.get("Tabla de datos_ Actuales", [])
         
     if actuales:
         latest_actuales = actuales[0]
@@ -398,7 +470,7 @@ def scrape_html_station(slug: str, name: str, coords: list) -> dict:
             
     # Si no se pudo obtener temperatura de promedios, buscar en la tabla "Horarios"
     if "air_temperature" not in station_data:
-        horarios_fallback = parsed_tables.get("Tabla de datos: Horarios", []) or parsed_tables.get("Table_0", [])
+        horarios_fallback = parsed_tables.get("Tabla de datos_ Horarios", []) or parsed_tables.get("Tabla de datos: Horarios", []) or parsed_tables.get("Table_0", [])
         if horarios_fallback:
             latest_horario = horarios_fallback[0]
             temp_val = latest_horario.get("Temp")
@@ -417,7 +489,7 @@ def scrape_html_station(slug: str, name: str, coords: list) -> dict:
             horarios_list = v
             break
     if not horarios_list:
-        horarios_list = parsed_tables.get("Tabla de datos: Horarios", []) or parsed_tables.get("Table_0", [])
+        horarios_list = parsed_tables.get("Tabla de datos_ Horarios", []) or parsed_tables.get("Tabla de datos: Horarios", []) or parsed_tables.get("Table_0", [])
 
     hourly_list = []
     if horarios_list:
@@ -491,10 +563,10 @@ async def fetch_all_weather_data():
 
         # Mapeo de IDs de la red mundial WMO a identificadores/slugs locales de Campbell RTMC
         WMO_TO_CAMPBELL_MAPPING = {
-            "0-188-0-72157": "laceiba",    # Finca La Ceiba
-            "0-188-0-87013": "sixaola",    # Sixaola
-            "0-188-0-69633": "loschiles",  # Los Chiles / Comando Los Chiles
-            "0-188-0-100651": "coto49"     # Coto 49
+            "0-188-0-72157": "LaCeiba",    # Finca La Ceiba
+            "0-188-0-87013": "Sixaola",    # Sixaola
+            "0-188-0-69633": "Chiles",     # Los Chiles / Comando Los Chiles
+            "0-188-0-100651": "Coto49"     # Coto 49
         }
 
         # 3. Consolidar estaciones globales
