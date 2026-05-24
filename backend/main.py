@@ -347,6 +347,79 @@ HTML_STATIONS = [
     ("upaz", "Estación Universidad para la Paz (Mora)", [-84.2500, 9.9167]),
 ]
 
+def scrape_automatic_stations_list() -> list:
+    """Extrae la lista actualizada de estaciones automáticas desde el IMN."""
+    import re
+    url = "https://www.imn.ac.cr/web/imn/estaciones-automaticas"
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            html = response.read().decode("utf-8", errors="ignore")
+            
+        class StationListParser(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.in_row = False
+                self.in_cell = False
+                self.current_row = []
+                self.rows = []
+                
+            def handle_starttag(self, tag, attrs):
+                if tag == "tr":
+                    self.in_row = True
+                    self.current_row = []
+                elif tag == "td" and self.in_row:
+                    self.in_cell = True
+                elif tag == "a" and self.in_cell:
+                    for k, v in attrs:
+                        if k == "href":
+                            self.current_row.append(f"LINK:{v}")
+                            
+            def handle_data(self, data):
+                if self.in_cell:
+                    data = data.strip()
+                    if data:
+                        self.current_row.append(data)
+                        
+            def handle_endtag(self, tag):
+                if tag == "tr":
+                    self.in_row = False
+                    if self.current_row:
+                        self.rows.append(self.current_row)
+                elif tag == "td":
+                    self.in_cell = False
+
+        sp = StationListParser()
+        sp.feed(html)
+        
+        stations = []
+        seen_slugs = set()
+        
+        for row in sp.rows:
+            link = next((item for item in row if item.startswith("LINK:")), None)
+            if not link:
+                continue
+                
+            link_url = link.replace("LINK:", "")
+            m = re.search(r"estacion([^./]+)", link_url, re.IGNORECASE)
+            if m:
+                slug = m.group(1)
+                name_parts = []
+                for item in row:
+                    if not item.startswith("LINK:") and item.lower() not in ["entrar", "activa", "inactiva"]:
+                        name_parts.append(item)
+                
+                full_name = " ".join(name_parts) if name_parts else f"Estación {slug}"
+                
+                if slug.lower() not in seen_slugs:
+                    seen_slugs.add(slug.lower())
+                    stations.append((slug, full_name))
+                    
+        return stations
+    except Exception as e:
+        logger.error(f"Error raspando lista de estaciones automáticas: {e}")
+        return []
+
 def scrape_html_station(slug: str, name: str, coords: list) -> dict:
     # Data tables are in /especial/tablas/{lowercase}.html (iframe format with real data)
     # Some stations use mixed-case iframe URLs, so try both
@@ -597,7 +670,19 @@ async def fetch_all_weather_data():
             consolidated_features.append(station_data)
             
         # 4. Scrapear e integrar todas las estaciones HTML locales en paralelo
-        logger.info(f"Iniciando raspado de {len(HTML_STATIONS)} estaciones locales...")
+        dynamic_stations = scrape_automatic_stations_list()
+        
+        known_coords = {s[0].lower(): s[2] for s in HTML_STATIONS}
+        stations_to_scrape = []
+        
+        if dynamic_stations:
+            logger.info(f"Iniciando raspado de {len(dynamic_stations)} estaciones locales (dinámicas)...")
+            for slug, name in dynamic_stations:
+                coords = known_coords.get(slug.lower(), [0, 0])
+                stations_to_scrape.append((slug, name, coords))
+        else:
+            logger.warning("Fallo al obtener estaciones dinámicas, usando lista estática...")
+            stations_to_scrape = HTML_STATIONS
         
         def scrape_safe(station):
             slug, name, coords = station
@@ -608,7 +693,7 @@ async def fetch_all_weather_data():
                 return None
                 
         with concurrent.futures.ThreadPoolExecutor(max_workers=25) as executor:
-            scraped_results = list(executor.map(scrape_safe, HTML_STATIONS))
+            scraped_results = list(executor.map(scrape_safe, stations_to_scrape))
             
         for s_data in scraped_results:
             if s_data:
