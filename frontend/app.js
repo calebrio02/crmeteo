@@ -288,7 +288,7 @@ const ELEVATION_LOOKUP = {
     "bijagua": 480,
     "chirripo": 3820,
     "iztaru": 1830,
-    "cartagotec": 1430,
+    "cartago": 1430,
     "stacruz": 50,
     "pozoazul": 190,
     "garza": 12,
@@ -314,7 +314,7 @@ const ELEVATION_LOOKUP = {
     "chitaria": 1050,
     "cigefi": 1205,
     "cipanci": 15,
-    "ciudadjudicial": 980,
+    "judicial": 980,
     "coto49": 35,
     "damas": 40,
     "elcarmen": 95,
@@ -396,7 +396,7 @@ function showStationDetails(station) {
     document.getElementById('det-lon').innerText = station.coordinates[0].toFixed(4);
     
     // Altitud
-    const alt = station.elevation || ELEVATION_LOOKUP[station.id] || '--';
+    const alt = station.elevation || ELEVATION_LOOKUP[station.id?.toLowerCase()] || '--';
     document.getElementById('det-alt').innerText = alt;
 
     // 2. Cargar Temperatura
@@ -659,7 +659,7 @@ function showStationDetails(station) {
     }
 
     // Centrar suavemente el mapa en la estación seleccionada
-    map.panTo([station.coordinates[1], station.coordinates[0]], { animate: true, duration: 0.6 });
+    map.flyTo([station.coordinates[1], station.coordinates[0]], map.getZoom(), { animate: true, duration: 0.6 });
 }
 
 // Cerrar sidebar detalle y volver al resumen

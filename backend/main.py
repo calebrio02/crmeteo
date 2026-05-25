@@ -18,9 +18,8 @@ app = FastAPI(title="Costa Rica Weather API", version="1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "OPTIONS"],
+    allow_headers=["X-App-Signature", "Content-Type"],
 )
 
 CACHE_DIR = "/app/data"
@@ -119,7 +118,9 @@ def _parse_fecha(fecha_str: str) -> str:
                 fmt = "%H:%M:%S" if ":" == time_part[2] and len(time_part) > 5 else "%H:%M"
                 h = int(time_part.split(":")[0])
                 if period and "p" in period.lower():
-                    h = (h % 12) + 12
+                    h = (h % 12) + 12 if h % 12 else 12
+                elif period and h == 12:
+                    h = 0
                 dt = dt.replace(hour=h, minute=int(time_part.split(":")[1]))
             return dt
         # "23/05/2026"
@@ -293,7 +294,7 @@ HTML_STATIONS = [
     ("Pozoazul", "Estación Hotel Pozo Azul (Sarapiquí)", [-84.0167, 10.4167]),
     ("Ptovargas", "Estación Puerto Vargas Talamanca - Limón", [-83.3000, 9.5500]),
     ("Puntarenas", "Estación Puntarenas (Puntarenas)", [-84.8384, 9.9764]),
-    ("PuraVida", "Estación Dulce Nombre Nicoya - Guancaste", [-84.0500, 9.9300]),
+    ("PuraVida", "Estación Dulce Nombre (Cartago)", [-83.9200, 9.8600]),
     ("Rainforest", "Estación Rain Forest, Braulio Carrillo", [-83.9500, 10.1833]),
     ("Rebusca", "Estación La Rebusca Sarapiquí - Heredia", [-84.0000, 10.3000]),
     ("Rioclaro", "Estación Río Claro (Golfito)", [-83.0500, 8.6833]),
@@ -323,7 +324,7 @@ HTML_STATIONS = [
     ("Tirimbina", "Estación El Bosque, Rio Tirimbina", [-84.1167, 10.4167]),
     ("UPaz", "Estación Universidad para la Paz (Mora)", [-84.2500, 9.9167]),
     ("UTN", "Estación UTN, Balsa de Atenas Atenas - Alajuela", [-84.2800, 10.0200]),
-    ("Vblanca", "Estación Hotel Villa Blanca San Ramón - Alajueja", [-84.0500, 9.9300]),
+    ("Vblanca", "Estación Hotel Villa Blanca San Ramón - Alajuela", [-84.0500, 9.9300]),
     ("Virazu", "Estación Volcán Irazú Oreamuno - Cartago", [-83.9200, 9.8600]),
     ("Vturri", "Estación Volcán Turrialba Turrialba - Cartago", [-83.6800, 9.9000]),
     ("chitaria", "Estación Cerro Chitaria (Santa Ana)", [-84.1833, 9.9333]),
@@ -689,7 +690,8 @@ async def fetch_all_weather_data():
             try:
                 data = scrape_html_station(slug, name, coords)
                 return data
-            except Exception:
+            except Exception as e:
+                logger.warning(f"No se pudo scrapear estación {slug}: {e}")
                 return None
                 
         with concurrent.futures.ThreadPoolExecutor(max_workers=25) as executor:
@@ -724,10 +726,15 @@ async def fetch_all_weather_data():
             logger.error(f"Error integrando el pronóstico nacional: {fe}")
 
         # 6. Escribir caché
+        latest_update = ""
+        for s in consolidated_features:
+            lu = s.get("last_update") or ""
+            if lu and (not latest_update or lu > latest_update):
+                latest_update = lu
         result = {
             "status": "success",
             "count": len(consolidated_features),
-            "last_cached": consolidated_features[0].get("last_update") or "Tiempo real",
+            "last_cached": latest_update or "Tiempo real",
             "national_forecast": forecast_data,
             "stations": consolidated_features
         }

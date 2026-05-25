@@ -6,8 +6,8 @@
 docker compose up
 ```
 
-- Frontend: `http://localhost:8080`
-- Backend API: `http://localhost:8080/api/` (proxied through Nginx)
+- Frontend: `http://localhost:8090`
+- Backend API: `http://localhost:8090/api/` (proxied through Nginx)
 - Backend direct (inside Docker network): `backend:8000`
 - Backend local dev: `pip install -r backend/requirements.txt && uvicorn backend.main:app --reload --port 8000`
 
