@@ -8,6 +8,8 @@ Dashboard interactivo de monitoreo meteorológico en tiempo real para Costa Rica
 docker compose up
 ```
 
+> **Nota:** Si haces cambios en el frontend y no se reflejan en el navegador, haz un hard refresh (`Ctrl+Shift+R`) o reconstruye los contenedores con `docker compose up --build`.
+
 - Frontend: `http://localhost:8090`
 - Backend API: `http://localhost:8090/api/` (proxied vía Nginx)
 
