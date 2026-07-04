@@ -48,7 +48,6 @@ function initMap() {
 
 // Consultar los datos de la API
 async function fetchWeatherData() {
-    console.log('Solicitando datos meteorológicos actuales...');
     const headers = new Headers();
     headers.append('X-App-Signature', APP_SIGNATURE);
 
@@ -170,11 +169,7 @@ function updateUI() {
 
 // Determinar la clase de estado visual basado en la temperatura
 function getTempStatusClass(temp) {
-    if (temp === undefined || temp === null) return 'temp-status-mild';
-    if (temp < 20) return 'temp-status-cold';      // Menor de 20
-    if (temp <= 27) return 'temp-status-mild';     // Entre 20 y 27
-    if (temp <= 33) return 'temp-status-warm';     // Entre 27 y 33
-    return 'temp-status-hot';                       // Mayor de 33
+    return temp == null ? 'temp-status-mild' : temp < 20 ? 'temp-status-cold' : temp <= 27 ? 'temp-status-mild' : temp <= 33 ? 'temp-status-warm' : 'temp-status-hot';
 }
 
 // Crear marcador interactivo personalizado (Glowing Dot)
@@ -294,14 +289,12 @@ const ELEVATION_LOOKUP = {
     "garza": 12,
     "belen": 935,
     "coopevega": 110,
-    "garabito": 25,
     "catie": 602,
     "earth": 64,
     "ciudadninos": 1390,
     "llanogrande": 2240,
     "fraijanes": 1650,
     "pacayas": 1735,
-    "turrialba": 646,
     "upala": 56,
     "altamira": 1150,
     "arunachala": 810,
@@ -310,8 +303,7 @@ const ELEVATION_LOOKUP = {
     "betania": 145,
     "burio": 1750,
     "cantagallo": 45,
-    "cedral": 1820,
-    "chitaria": 1050,
+   "cedral": 1820,
     "cigefi": 1205,
     "cipanci": 15,
     "judicial": 980,
@@ -334,13 +326,7 @@ const ELEVATION_LOOKUP = {
     "juanvinas": 1180,
     "juco": 1590,
     "lacruz": 255,
-    "laligia": 15,
-    "lalucha": 1920,
-    "lapastora": 1480,
-    "larebusca": 95,
-    "lasdelicias": 240,
     "laurel": 20,
-    "loschiles": 43,
     "loslotes": 1250,
     "macaya": 1395,
     "mangarica": 105,
@@ -359,10 +345,8 @@ const ELEVATION_LOOKUP = {
     "puntarenas": 3,
     "rainforest": 480,
     "rioclaro": 75,
-    "sangerardo": 450,
     "sanjorge": 70,
     "sanmateo": 250,
-    "santarosa": 290,
     "sepecue": 90,
     "sitiomata": 820,
     "sixaola": 15,
@@ -375,7 +359,6 @@ const ELEVATION_LOOKUP = {
 
 // Mostrar los datos detallados de una estación en el Sidebar
 function showStationDetails(station) {
-    console.log(`Abriendo panel de detalles para: ${station.name}`);
     
     // Auto-pausar el audio del pronóstico nacional si está reproduciéndose
     const audioEl = document.getElementById('forecast-native-audio');
@@ -523,139 +506,73 @@ function showStationDetails(station) {
     }
 
     if (hourlyHistory.length > 0) {
-        const labels = hourlyHistory.map(h => h.time.replace(':00', '')); // Acortar etiquetas
+        const labels = hourlyHistory.map(h => h.time.replace(':00', ''));
         const tempValues = hourlyHistory.map(h => h.temp);
         const rainValues = hourlyHistory.map(h => h.rain);
 
-        // --- Gráfico de Temperatura (Línea) ---
-        const ctxTemp = document.getElementById('temp-hourly-chart').getContext('2d');
-        
-        // Crear gradiente cian translúcido para el relleno de la curva
-        const tempGrad = ctxTemp.createLinearGradient(0, 0, 0, 100);
-        tempGrad.addColorStop(0, 'rgba(6, 182, 212, 0.25)');
-        tempGrad.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
-
-        tempChart = new Chart(ctxTemp, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Temperatura (°C)',
-                    data: tempValues,
-                    borderColor: '#06b6d4',
-                    borderWidth: 2,
-                    backgroundColor: tempGrad,
-                    fill: true,
-                    tension: 0.4, // Curva suave
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    pointHoverBackgroundColor: '#06b6d4'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                        titleFont: { family: 'Outfit', size: 10 },
-                        bodyFont: { family: 'Inter', size: 11 },
-                        borderColor: 'rgba(255, 255, 255, 0.08)',
-                        borderWidth: 1,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return `Temp: ${context.parsed.y.toFixed(1)} °C`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            color: 'rgba(255, 255, 255, 0.35)',
-                            font: { family: 'Outfit', size: 8 },
-                            maxTicksLimit: 6
+        function createChart(canvasId, type, dataset, tooltipLabel) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 0, 100);
+            grad.addColorStop(0, dataset.bgGradientStop0);
+            grad.addColorStop(1, dataset.bgGradientStop1);
+            return new Chart(ctx, {
+                type,
+                data: { labels, datasets: [{ ...dataset, backgroundColor: grad }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleFont: { family: 'Outfit', size: 10 },
+                            bodyFont: { family: 'Inter', size: 11 },
+                            borderColor: 'rgba(255, 255, 255, 0.08)',
+                            borderWidth: 1,
+                            displayColors: false,
+                            callbacks: { label: c => `${tooltipLabel}: ${c.parsed.y.toFixed(1)}` }
                         }
                     },
-                    y: {
-                        grid: { color: 'rgba(255, 255, 255, 0.03)' },
-                        ticks: {
-                            color: 'rgba(255, 255, 255, 0.35)',
-                            font: { family: 'Outfit', size: 8 },
-                            maxTicksLimit: 4
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255, 255, 255, 0.35)', font: { family: 'Outfit', size: 8 }, maxTicksLimit: 6 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                            ticks: { color: 'rgba(255, 255, 255, 0.35)', font: { family: 'Outfit', size: 8 }, maxTicksLimit: 4 }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
 
-        // --- Gráfico de Lluvia (Barras) ---
-        const ctxRain = document.getElementById('rain-hourly-chart').getContext('2d');
-        
-        const rainGrad = ctxRain.createLinearGradient(0, 0, 0, 100);
-        rainGrad.addColorStop(0, 'rgba(14, 165, 233, 0.45)');
-        rainGrad.addColorStop(1, 'rgba(14, 165, 233, 0.05)');
+        tempChart = createChart('temp-hourly-chart', 'line', {
+            label: 'Temperatura (°C)',
+            data: tempValues,
+            borderColor: '#06b6d4',
+            borderWidth: 2,
+            bgGradientStop0: 'rgba(6, 182, 212, 0.25)',
+            bgGradientStop1: 'rgba(6, 182, 212, 0.0)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointHoverBackgroundColor: '#06b6d4'
+        }, 'Temp');
 
-        rainChart = new Chart(ctxRain, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Lluvia (mm)',
-                    data: rainValues,
-                    backgroundColor: rainGrad,
-                    borderColor: '#0ea5e9',
-                    borderWidth: 1.5,
-                    borderRadius: 4,
-                    barPercentage: 0.7
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                        titleFont: { family: 'Outfit', size: 10 },
-                        bodyFont: { family: 'Inter', size: 11 },
-                        borderColor: 'rgba(255, 255, 255, 0.08)',
-                        borderWidth: 1,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return `Lluvia: ${context.parsed.y.toFixed(1)} mm`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            color: 'rgba(255, 255, 255, 0.35)',
-                            font: { family: 'Outfit', size: 8 },
-                            maxTicksLimit: 6
-                        }
-                    },
-                    y: {
-                        grid: { color: 'rgba(255, 255, 255, 0.03)' },
-                        ticks: {
-                            color: 'rgba(255, 255, 255, 0.35)',
-                            font: { family: 'Outfit', size: 8 },
-                            maxTicksLimit: 4
-                        }
-                    }
-                }
-            }
-        });
+        rainChart = createChart('rain-hourly-chart', 'bar', {
+            label: 'Lluvia (mm)',
+            data: rainValues,
+            borderColor: '#0ea5e9',
+            borderWidth: 1.5,
+            bgGradientStop0: 'rgba(14, 165, 233, 0.45)',
+            bgGradientStop1: 'rgba(14, 165, 233, 0.05)',
+            borderRadius: 4,
+            barPercentage: 0.7
+        }, 'Lluvia');
     }
 
     // Centrar suavemente el mapa en la estación seleccionada
@@ -676,14 +593,6 @@ function closeDetailSidebar() {
     
     document.getElementById('sidebar-detail').classList.add('hidden');
     document.getElementById('sidebar-default').classList.remove('hidden');
-}
-
-// Formatear segundos en formato M:SS
-function formatForecastTime(seconds) {
-    if (isNaN(seconds) || seconds === Infinity) return "0:00";
-    const minutes = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
 // Inicializar el reproductor de audio personalizado para el pronóstico nacional
@@ -741,11 +650,11 @@ function initForecastAudioPlayer() {
         if (!audioEl.duration) return;
         const pct = (audioEl.currentTime / audioEl.duration) * 100;
         timeline.value = pct;
-        timeCurr.innerText = formatForecastTime(audioEl.currentTime);
+        timeCurr.innerText = `${Math.floor(audioEl.currentTime / 60)}:${String(Math.floor(audioEl.currentTime % 60)).padStart(2, '0')}`;
     });
     
     audioEl.addEventListener('loadedmetadata', () => {
-        timeTot.innerText = formatForecastTime(audioEl.duration);
+        timeTot.innerText = `${Math.floor(audioEl.duration / 60)}:${String(Math.floor(audioEl.duration % 60)).padStart(2, '0')}`;
     });
     
     // Manual timeline seek
@@ -753,7 +662,7 @@ function initForecastAudioPlayer() {
         if (!audioEl.duration) return;
         const targetTime = (timeline.value / 100) * audioEl.duration;
         audioEl.currentTime = targetTime;
-        timeCurr.innerText = formatForecastTime(targetTime);
+        timeCurr.innerText = `${Math.floor(targetTime / 60)}:${String(Math.floor(targetTime % 60)).padStart(2, '0')}`;
     });
     
     // Volume button click (Mute toggle)

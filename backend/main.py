@@ -2,25 +2,19 @@ import os
 import json
 import logging
 import asyncio
+import re
+import datetime
 import urllib.request
+import urllib.parse
 import concurrent.futures
 from html.parser import HTMLParser
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("weather-backend")
 
 app = FastAPI(title="Costa Rica Weather API", version="1.0")
-
-# Permitir CORS (para pruebas o desarrollo directo, aunque Nginx controlará el acceso principal)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["GET", "OPTIONS"],
-    allow_headers=["X-App-Signature", "Content-Type"],
-)
 
 CACHE_DIR = "/app/data"
 CACHE_FILE = os.path.join(CACHE_DIR, "weather_cache.json")
@@ -100,9 +94,6 @@ def _parse_fecha(fecha_str: str) -> str:
     - "23/05/2026 09:00 p. m." (Tabla Horarios)
     - "23/05/2026" (Tabla Promedio 2 min)
     """
-    import re
-    import datetime
-    
     fechas = [f for f in fecha_str if f]
     if not fechas:
         return ""
@@ -138,16 +129,7 @@ def _parse_fecha(fecha_str: str) -> str:
 # -------------------------------------------------------------
 # Funciones Auxiliares de Fetch y Parseo
 # -------------------------------------------------------------
-def fetch_json(url: str) -> dict:
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    with urllib.request.urlopen(req, timeout=10) as response:
-        return json.loads(response.read().decode('utf-8'))
-
 def scrape_national_forecast() -> dict:
-    import urllib.request
-    import re
-    import urllib.parse
-    
     url = "https://www.imn.ac.cr/web/imn/inicio"
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
     try:
@@ -348,9 +330,23 @@ HTML_STATIONS = [
     ("upaz", "Estación Universidad para la Paz (Mora)", [-84.2500, 9.9167]),
 ]
 
+def extract_float(data, fallbacks=None):
+    """Extrae un float de un dict, intentando keys alternativas."""
+    if not data or not fallbacks:
+        return None
+    if not isinstance(data, dict):
+        return None
+    for key in fallbacks:
+        val = data.get(key)
+        if val is not None and val != "":
+            try:
+                return float(str(val).replace(",", "."))
+            except (ValueError, TypeError):
+                continue
+    return None
+
 def scrape_automatic_stations_list() -> list:
     """Extrae la lista actualizada de estaciones automáticas desde el IMN."""
-    import re
     url = "https://www.imn.ac.cr/web/imn/estaciones-automaticas"
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     try:
@@ -466,38 +462,15 @@ def scrape_html_station(slug: str, name: str, coords: list) -> dict:
     if not promedios:
         promedios = parsed_tables.get("Tabla de datos_ Promedio", []) or parsed_tables.get("Tabla de datos_ Promedio 2 min", []) or parsed_tables.get("Table_2", []) or parsed_tables.get("Table_1", [])
 
-    if promedios:
+    if promedios and isinstance(promedios[0], dict):
         latest_promedio = promedios[0]
         
-        temp_val = latest_promedio.get("Temp") or latest_promedio.get("Temp_c") or latest_promedio.get("Temperatura")
-        if temp_val:
-            try: station_data["air_temperature"] = float(temp_val.replace(",", "."))
-            except: pass
-            
-        td_val = latest_promedio.get("Td") or latest_promedio.get("Punto_rocio")
-        if td_val:
-            try: station_data["dewpoint_temperature"] = float(td_val.replace(",", "."))
-            except: pass
-            
-        hr_val = latest_promedio.get("HR") or latest_promedio.get("Humedad")
-        if hr_val:
-            try: station_data["relative_humidity"] = float(hr_val.replace(",", "."))
-            except: pass
-            
-        wind_val = latest_promedio.get("Velocidad") or latest_promedio.get("Viento")
-        if wind_val:
-            try: station_data["wind_speed"] = float(wind_val.replace(",", "."))
-            except: pass
-            
-        dir_val = latest_promedio.get("Dirección") or latest_promedio.get("Direccion")
-        if dir_val:
-            try: station_data["wind_direction"] = float(dir_val.replace(",", "."))
-            except: pass
-            
-        thermal_val = latest_promedio.get("Sens térmica") or latest_promedio.get("Sens_termica")
-        if thermal_val:
-            try: station_data["thermal_sensation"] = float(thermal_val.replace(",", "."))
-            except: pass
+        station_data["air_temperature"] = extract_float(latest_promedio, ["Temp", "Temp_c", "Temperatura"])
+        station_data["dewpoint_temperature"] = extract_float(latest_promedio, ["Td", "Punto_rocio"])
+        station_data["relative_humidity"] = extract_float(latest_promedio, ["HR", "Humedad"])
+        station_data["wind_speed"] = extract_float(latest_promedio, ["Velocidad", "Viento"])
+        station_data["wind_direction"] = extract_float(latest_promedio, ["Dirección", "Direccion"])
+        station_data["thermal_sensation"] = extract_float(latest_promedio, ["Sens térmica", "Sens_termica"])
 
     # Buscar la tabla de actuales
     actuales = []
@@ -508,53 +481,30 @@ def scrape_html_station(slug: str, name: str, coords: list) -> dict:
     if not actuales:
         actuales = parsed_tables.get("Tabla de datos_ Actuales", [])
         
-    if actuales:
+    if actuales and isinstance(actuales[0], dict):
         latest_actuales = actuales[0]
         fecha_actuales = latest_actuales.get("Fecha", "")
         if not fecha_actuales:
-            fecha_promedio = promedios[0].get("Fecha", "") if promedios and len(promedios[0]) > 0 else ""
+            fecha_promedio = promedios[0].get("Fecha", "") if promedios and isinstance(promedios[0], dict) else ""
             if fecha_promedio:
                 fecha_actuales = fecha_promedio
         station_data["last_update"] = fecha_actuales
         
-        vmax_val = latest_actuales.get("Vmax") or latest_actuales.get("Racha")
-        if vmax_val:
-            try: station_data["maximum_wind_gust_speed"] = float(vmax_val.replace(",", "."))
-            except: pass
-            
-        rain_val = latest_actuales.get("SUM_lluv") or latest_actuales.get("Lluvia_hoy") or latest_actuales.get("SUM_Lluv")
-        if rain_val:
-            try: station_data["total_precipitation_or_total_water_equivalent"] = float(rain_val.replace(",", "."))
-            except: pass
-            
-        rain_yesterday_val = latest_actuales.get("LLUV_ayer") or latest_actuales.get("Lluvia_ayer") or latest_actuales.get("Lluv_ayer")
-        if rain_yesterday_val:
-            try: station_data["rain_yesterday"] = float(rain_yesterday_val.replace(",", "."))
-            except: pass
-
-        tmax_val = latest_actuales.get("Tmax") or latest_actuales.get("Temp_max")
-        if tmax_val:
-            try: station_data["temp_max"] = float(tmax_val.replace(",", "."))
-            except: pass
-            
-        tmin_val = latest_actuales.get("Tmin") or latest_actuales.get("Temp_min")
-        if tmin_val:
-            try: station_data["temp_min"] = float(tmin_val.replace(",", "."))
-            except: pass
+        station_data["maximum_wind_gust_speed"] = extract_float(latest_actuales, ["Vmax", "Racha"])
+        station_data["total_precipitation_or_total_water_equivalent"] = extract_float(latest_actuales, ["SUM_lluv", "Lluvia_hoy", "SUM_Lluv"])
+        station_data["rain_yesterday"] = extract_float(latest_actuales, ["LLUV_ayer", "Lluvia_ayer", "Lluv_ayer"])
+        station_data["temp_max"] = extract_float(latest_actuales, ["Tmax", "Temp_max"])
+        station_data["temp_min"] = extract_float(latest_actuales, ["Tmin", "Temp_min"])
             
     # Si no se pudo obtener temperatura de promedios, buscar en la tabla "Horarios"
-    if "air_temperature" not in station_data:
+    if station_data.get("air_temperature") is None:
         horarios_fallback = parsed_tables.get("Tabla de datos_ Horarios", []) or parsed_tables.get("Tabla de datos: Horarios", []) or parsed_tables.get("Table_0", [])
         if horarios_fallback:
             latest_horario = horarios_fallback[0]
-            temp_val = latest_horario.get("Temp")
-            if temp_val:
-                try: station_data["air_temperature"] = float(temp_val.replace(",", "."))
-                except: pass
-            rain_val = latest_horario.get("Lluvia")
-            if rain_val and "total_precipitation_or_total_water_equivalent" not in station_data:
-                try: station_data["total_precipitation_or_total_water_equivalent"] = float(rain_val.replace(",", "."))
-                except: pass
+            if station_data.get("air_temperature") is None:
+                station_data["air_temperature"] = extract_float(latest_horario, ["Temp"])
+            if station_data.get("total_precipitation_or_total_water_equivalent") is None:
+                station_data["total_precipitation_or_total_water_equivalent"] = extract_float(latest_horario, ["Lluvia"])
 
     # Obtener historial de 24 horas de la tabla Horarios
     horarios_list = []
@@ -568,6 +518,8 @@ def scrape_html_station(slug: str, name: str, coords: list) -> dict:
     hourly_list = []
     if horarios_list:
         for row in horarios_list[:24]:  # Últimas 24 horas
+            if not isinstance(row, dict):
+                continue
             fecha = row.get("Fecha", "")
             time_label = ""
             if fecha:
@@ -578,17 +530,8 @@ def scrape_html_station(slug: str, name: str, coords: list) -> dict:
                 else:
                     time_label = fecha
             
-            temp_val = row.get("Temp") or row.get("Temperatura") or row.get("Temp_c")
-            temp_num = None
-            if temp_val:
-                try: temp_num = float(temp_val.replace(",", "."))
-                except: pass
-                
-            rain_val = row.get("Lluvia") or row.get("Lluv")
-            rain_num = 0.0
-            if rain_val:
-                try: rain_num = float(rain_val.replace(",", "."))
-                except: pass
+            temp_num = extract_float(row, ["Temp", "Temperatura", "Temp_c"])
+            rain_num = extract_float(row, ["Lluvia", "Lluv"]) or 0.0
                 
             hourly_list.append({
                 "time": time_label,
@@ -603,11 +546,15 @@ async def fetch_all_weather_data():
     logger.info("Iniciando recolección de datos meteorológicos...")
     try:
         # 1. Obtener la lista de estaciones desde wis2box
-        stations_geojson = fetch_json("http://wis2box.imn.ac.cr/oapi/collections/stations/items?f=json")
+        req = urllib.request.Request("http://wis2box.imn.ac.cr/oapi/collections/stations/items?f=json", headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            stations_geojson = json.loads(response.read().decode('utf-8'))
         features_stations = stations_geojson.get("features", [])
         
         # 2. Obtener las últimas observaciones (500 ítems) para tener lecturas frescas
-        observations_geojson = fetch_json("http://wis2box.imn.ac.cr/oapi/collections/urn:wmo:md:cr-imn:core.surface-based-observations.synop/items?f=json&limit=500&sortby=-reportTime")
+        req2 = urllib.request.Request("http://wis2box.imn.ac.cr/oapi/collections/urn:wmo:md:cr-imn:core.surface-based-observations.synop/items?f=json&limit=500&sortby=-reportTime", headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req2, timeout=10) as response:
+            observations_geojson = json.loads(response.read().decode('utf-8'))
         features_obs = observations_geojson.get("features", [])
         
         # Agrupar observaciones por estación e identificar la más reciente para cada parámetro
@@ -746,7 +693,6 @@ async def fetch_all_weather_data():
         
     except Exception as e:
         logger.error(f"Error crítico en la recolección de datos: {e}")
-        # Si ocurre un fallo pero ya hay un caché previo, lo mantenemos intacto
 
 # -------------------------------------------------------------
 # Tarea de fondo programada (Loop cada 1 minuto)
@@ -786,10 +732,8 @@ def read_root():
 @app.get("/weather")
 def get_weather():
     if not os.path.exists(CACHE_FILE):
-        # Si aún no se ha generado la caché, intentamos correr el fetch de manera síncrona/inmediata
         logger.warning("Caché no encontrada en el endpoint. Intentando recolección inmediata...")
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(fetch_all_weather_data())
+        asyncio.run(fetch_all_weather_data())
         
         if not os.path.exists(CACHE_FILE):
             raise HTTPException(status_code=503, detail="Los datos meteorológicos se están cargando. Por favor, inténtelo de nuevo en unos segundos.")

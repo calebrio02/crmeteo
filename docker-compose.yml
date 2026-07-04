@@ -22,8 +22,6 @@ services:
       - weather_data:/app/data
     networks:
       - weather_net
-    environment:
-      - PYTHONUNBUFFERED=1
     restart: always
 
 volumes:
