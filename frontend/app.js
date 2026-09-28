@@ -30,13 +30,18 @@ function initMap() {
         attributionControl: true
     }).setView([9.95, -84.05], 8.5);
 
-    // Cargar mapa base de CartoDB Dark Matter (Premium Dark Style)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
+    // Mapa base: Esri World Dark Canvas (gratis, sin API key, tema oscuro premium)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; <a href="https://www.esri.com/">Esri</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
-        minZoom: 7,
+        minZoom: 6,
         detectRetina: true
+    }).addTo(map);
+
+    // Capa de etiquetas (vías, topónimos) sobre la base oscura
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        minZoom: 6
     }).addTo(map);
 
     // Crear grupo de capas para poder limpiar y redibujar marcadores
