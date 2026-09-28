@@ -146,23 +146,8 @@ function initMap() {
         minZoom: 6
     }).addTo(map);
 
-    // Grupo de capas con CLUSTERING (118 estaciones; GAM densa: San José/Cartago)
-    markerLayerGroup = L.markerClusterGroup({
-        maxClusterRadius: 36,
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        zoomToBoundsOnClick: true,
-        disableClusteringAtZoom: 13,
-        iconCreateFunction: function (cluster) {
-            const count = cluster.getChildCount();
-            return L.divIcon({
-                html: `<div class="custom-cluster-badge"><span>${count}</span></div>`,
-                className: 'marker-cluster-custom',
-                iconSize: [34, 34],
-                iconAnchor: [17, 17]
-            });
-        }
-    });
+    // Grupo de capas simple: TODAS las estaciones visibles (sin clustering)
+    markerLayerGroup = L.layerGroup();
     map.addLayer(markerLayerGroup);
 
     // Cerrar el panel de detalle y mostrar resumen nacional al hacer clic en el fondo del mapa
