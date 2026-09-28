@@ -34,7 +34,9 @@ function initMap() {
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
-        maxZoom: 19
+        maxZoom: 19,
+        minZoom: 7,
+        detectRetina: true
     }).addTo(map);
 
     // Crear grupo de capas para poder limpiar y redibujar marcadores
@@ -106,10 +108,11 @@ function updateUI() {
             }
         }
 
-        // Viento
-        if (wind !== undefined && wind !== null) {
-            if (wind > maxWind) {
-                maxWind = wind;
+        // Viento normalizado a km/h (wis2box reporta en m/s, Campbell en km/h)
+        const windKmh = (wind !== undefined && wind !== null) ? (station.source.includes('wis2box') ? wind * 3.6 : wind) : null;
+        if (windKmh !== null) {
+            if (windKmh > maxWind) {
+                maxWind = windKmh;
                 maxWindStation = station.name;
             }
         }
@@ -135,7 +138,7 @@ function updateUI() {
     document.getElementById('min-temp-val').innerText = minTemp !== 999 ? `${minTemp.toFixed(1)} °C` : 'N/A';
     document.getElementById('min-temp-loc').innerText = minTempStation || '-';
 
-    document.getElementById('max-wind-val').innerText = maxWind !== -999 ? `${maxWind.toFixed(1)} m/s` : 'N/A';
+    document.getElementById('max-wind-val').innerText = maxWind !== -999 ? `${maxWind.toFixed(1)} km/h` : 'N/A';
     document.getElementById('max-wind-loc').innerText = maxWindStation || '-';
 
     // Formatear hora de última actualización
@@ -169,7 +172,13 @@ function updateUI() {
 
 // Determinar la clase de estado visual basado en la temperatura
 function getTempStatusClass(temp) {
-    return temp == null ? 'temp-status-mild' : temp < 20 ? 'temp-status-cold' : temp <= 27 ? 'temp-status-mild' : temp <= 33 ? 'temp-status-warm' : 'temp-status-hot';
+    // Escala de 5 zonas bioclimáticas de Costa Rica
+    if (temp == null) return 'temp-status-mild';
+    if (temp < 17.0) return 'temp-status-alpine';
+    if (temp < 22.0) return 'temp-status-cool';
+    if (temp < 27.0) return 'temp-status-mild';
+    if (temp < 32.0) return 'temp-status-warm';
+    return 'temp-status-hot';
 }
 
 // Crear marcador interactivo personalizado (Glowing Dot)
@@ -199,20 +208,33 @@ function createStationMarker(station) {
     // Crear marcador Leaflet
     const marker = L.marker([coords[1], coords[0]], { icon: icon });
 
-    // Popup simple al pasar el ratón (Hover)
+    // Tooltip telemétrico con clases CSS (sin estilos inline)
     marker.bindTooltip(`
-        <div style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 600; padding: 2px 4px;">
-            ${station.name}<br>
-            <span style="color: #06b6d4; font-size: 1rem; font-weight: 700;">${tempStr}</span>
+        <div class="weather-tooltip-inner">
+            <span class="tooltip-name">${station.name}</span>
+            <span class="tooltip-temp ${statusClass}">${tempStr}</span>
         </div>
     `, {
         direction: 'top',
-        offset: [0, -10],
-        opacity: 0.95
+        offset: [0, -8],
+        className: 'custom-weather-tooltip',
+        opacity: 1
     });
 
-    // Acción al hacer clic: Mostrar detalle en la barra lateral
+    // Acción al hacer clic: detalle + sonar radar únicamente en el pin activo
     marker.on('click', () => {
+        markerLayerGroup.getLayers().forEach(m => {
+            const el = m.getElement();
+            if (el) {
+                const cm = el.querySelector('.custom-marker');
+                if (cm) cm.classList.remove('is-selected');
+            }
+        });
+        const el = marker.getElement();
+        if (el) {
+            const cm = el.querySelector('.custom-marker');
+            if (cm) cm.classList.add('is-selected');
+        }
         showStationDetails(station);
     });
 
@@ -526,9 +548,9 @@ function showStationDetails(station) {
                         tooltip: {
                             mode: 'index',
                             intersect: false,
-                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                            titleFont: { family: 'Outfit', size: 10 },
-                            bodyFont: { family: 'Inter', size: 11 },
+                            backgroundColor: 'rgba(10, 15, 29, 0.95)',
+                            titleFont: { family: "'Plus Jakarta Sans', sans-serif", size: 10 },
+                            bodyFont: { family: "'JetBrains Mono', monospace", size: 10 },
                             borderColor: 'rgba(255, 255, 255, 0.08)',
                             borderWidth: 1,
                             displayColors: false,
@@ -538,11 +560,11 @@ function showStationDetails(station) {
                     scales: {
                         x: {
                             grid: { display: false },
-                            ticks: { color: 'rgba(255, 255, 255, 0.35)', font: { family: 'Outfit', size: 8 }, maxTicksLimit: 6 }
+                            ticks: { color: '#64748b', font: { family: "'Plus Jakarta Sans', sans-serif", size: 9, weight: '500' }, maxTicksLimit: 6 }
                         },
                         y: {
-                            grid: { color: 'rgba(255, 255, 255, 0.03)' },
-                            ticks: { color: 'rgba(255, 255, 255, 0.35)', font: { family: 'Outfit', size: 8 }, maxTicksLimit: 4 }
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 9 }, maxTicksLimit: 4 }
                         }
                     }
                 }
@@ -552,31 +574,35 @@ function showStationDetails(station) {
         tempChart = createChart('temp-hourly-chart', 'line', {
             label: 'Temperatura (°C)',
             data: tempValues,
-            borderColor: '#06b6d4',
+            borderColor: '#38bdf8',
             borderWidth: 2,
-            bgGradientStop0: 'rgba(6, 182, 212, 0.25)',
-            bgGradientStop1: 'rgba(6, 182, 212, 0.0)',
+            bgGradientStop0: 'rgba(56, 189, 248, 0.30)',
+            bgGradientStop1: 'rgba(56, 189, 248, 0.00)',
             fill: true,
-            tension: 0.4,
+            tension: 0.35,
             pointRadius: 0,
             pointHoverRadius: 4,
-            pointHoverBackgroundColor: '#06b6d4'
+            pointHoverBackgroundColor: '#38bdf8'
         }, 'Temp');
 
         rainChart = createChart('rain-hourly-chart', 'bar', {
             label: 'Lluvia (mm)',
             data: rainValues,
-            borderColor: '#0ea5e9',
-            borderWidth: 1.5,
-            bgGradientStop0: 'rgba(14, 165, 233, 0.45)',
-            bgGradientStop1: 'rgba(14, 165, 233, 0.05)',
+            borderColor: '#3b82f6',
+            borderWidth: 1,
+            bgGradientStop0: 'rgba(59, 130, 246, 0.65)',
+            bgGradientStop1: 'rgba(59, 130, 246, 0.15)',
             borderRadius: 4,
-            barPercentage: 0.7
+            barPercentage: 0.65
         }, 'Lluvia');
     }
 
-    // Centrar suavemente el mapa en la estación seleccionada
-    map.flyTo([station.coordinates[1], station.coordinates[0]], map.getZoom(), { animate: true, duration: 0.6 });
+    // Centrar la estación desplazada hacia la izquierda para que no quede oculta bajo la sidebar
+    const targetZoom = Math.max(map.getZoom(), 10);
+    const pxOffset = window.innerWidth > 768 ? 200 : 0;
+    const targetPoint = map.project([station.coordinates[1], station.coordinates[0]], targetZoom).add([pxOffset, 0]);
+    const targetLatLng = map.unproject(targetPoint, targetZoom);
+    map.flyTo(targetLatLng, targetZoom, { animate: true, duration: 0.75 });
 }
 
 // Cerrar sidebar detalle y volver al resumen
@@ -590,7 +616,16 @@ function closeDetailSidebar() {
         rainChart.destroy();
         rainChart = null;
     }
-    
+
+    // Quitar el sonar de radar de cualquier pin seleccionado
+    markerLayerGroup.getLayers().forEach(m => {
+        const el = m.getElement();
+        if (el) {
+            const cm = el.querySelector('.custom-marker');
+            if (cm) cm.classList.remove('is-selected');
+        }
+    });
+
     document.getElementById('sidebar-detail').classList.add('hidden');
     document.getElementById('sidebar-default').classList.remove('hidden');
 }

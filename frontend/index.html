@@ -8,7 +8,7 @@
     <!-- Google Fonts: Outfit & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Leaflet.js CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -49,6 +49,7 @@
 
         <!-- Panel Lateral Informativo (Glassmorphism Sidebar) -->
         <aside class="sidebar" id="station-sidebar">
+            <div class="sidebar-drag-handle"></div>
             <!-- Vista General (Default) -->
             <div class="sidebar-default" id="sidebar-default">
                 <h2>Resumen Meteorológico</h2>
@@ -117,7 +118,7 @@
 
                 <div class="summary-cards">
                     <div class="summary-card">
-                        <div class="card-icon">🔥</div>
+                        <div class="card-icon"><svg class="metric-icon-svg icon-hot" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg></div>
                         <div class="card-details">
                             <h3>Temp. Máxima</h3>
                             <span class="card-value" id="max-temp-val">-</span>
@@ -126,7 +127,7 @@
                     </div>
                     
                     <div class="summary-card">
-                        <div class="card-icon">❄️</div>
+                        <div class="card-icon"><svg class="metric-icon-svg icon-cold" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg></div>
                         <div class="card-details">
                             <h3>Temp. Mínima</h3>
                             <span class="card-value" id="min-temp-val">-</span>
@@ -135,7 +136,7 @@
                     </div>
 
                     <div class="summary-card">
-                        <div class="card-icon">💨</div>
+                        <div class="card-icon"><svg class="metric-icon-svg icon-wind" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg></div>
                         <div class="card-details">
                             <h3>Viento Máximo</h3>
                             <span class="card-value" id="max-wind-val">-</span>
@@ -160,14 +161,14 @@
                 <!-- Cabecera de la Estación (Estilo Banner IMN) -->
                 <div class="station-meta-card-premium">
                     <div class="meta-top-row">
-                        <span class="badge-premium" id="station-badge">-</span>
+                        <span class="badge-premium" id="station-badge"><span class="live-dot-pulse"></span>-</span>
                         <span class="source-tag" id="station-source">-</span>
                     </div>
                     <h2 id="det-station-name">-</h2>
                     <div class="station-geo-details-premium">
-                        <div class="geo-item">Lat: <strong id="det-lat">-</strong></div>
-                        <div class="geo-item">Lon: <strong id="det-lon">-</strong></div>
-                        <div class="geo-item">Alt: <strong id="det-alt">-</strong> msnm</div>
+                        <div class="geo-item">Lat: <strong id="det-lat" class="font-mono">-</strong></div>
+                        <div class="geo-item">Lon: <strong id="det-lon" class="font-mono">-</strong></div>
+                        <div class="geo-item">Alt: <strong id="det-alt" class="font-mono">-</strong> msnm</div>
                     </div>
                 </div>
 
@@ -175,7 +176,7 @@
                 <div class="weather-panel-card temp-panel-premium">
                     <div class="panel-header">
                         <span>Temperatura</span>
-                        <span class="panel-icon">🌡️</span>
+                        <span class="panel-icon"><svg class="panel-svg icon-temp" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg></span>
                     </div>
                     <div class="panel-main-temp">
                         <span class="temp-big-num" id="det-temp">-</span><span class="temp-big-deg">°C</span>
@@ -206,7 +207,7 @@
                 <div class="weather-panel-card wind-panel-premium">
                     <div class="panel-header">
                         <span>Viento</span>
-                        <span class="panel-icon">💨</span>
+                        <span class="panel-icon"><svg class="panel-svg icon-wind" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg></span>
                     </div>
                     
                     <div class="wind-dashboard-body">
@@ -243,7 +244,7 @@
                 <div class="weather-panel-card rain-panel-premium">
                     <div class="panel-header">
                         <span>Precipitación</span>
-                        <span class="panel-icon">🌧️</span>
+                        <span class="panel-icon"><svg class="panel-svg icon-rain" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg></span>
                     </div>
                     
                     <!-- Canvas para Gráfico Horario de Lluvia -->
@@ -279,7 +280,7 @@
                     <div class="sensor-card dewpoint">
                         <div class="sensor-header">
                             <span>Temp. Rocío</span>
-                            <span>🍂</span>
+                            <span><svg class="panel-svg icon-dew" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 17H7"/><path d="M17 21H9"/></svg></span>
                         </div>
                         <strong class="sensor-val" id="det-dew">-</strong>
                     </div>
@@ -288,7 +289,7 @@
                     <div class="sensor-card humidity">
                         <div class="sensor-header">
                             <span>Humedad Rel.</span>
-                            <span>💧</span>
+                            <span><svg class="panel-svg icon-humidity" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a7 7 0 0 1-11.91 4.97"/></svg></span>
                         </div>
                         <div class="humidity-val-row">
                             <strong class="sensor-val" id="det-humidity">-</strong>
@@ -303,7 +304,7 @@
                 <div class="weather-panel-card diagnostics-panel" id="det-pressure-container">
                     <div class="panel-header">
                         <span>Diagnóstico e Instrumentos</span>
-                        <span class="panel-icon">📊</span>
+                        <span class="panel-icon"><svg class="panel-svg icon-gauge" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg></span>
                     </div>
                     <div class="diagnostics-row">
                         <span class="diag-label">Presión Atmosférica</span>
