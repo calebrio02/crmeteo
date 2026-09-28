@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Costa Rica - Mapa Meteorológico Interactivo</title>
     
     <!-- Google Fonts: Plus Jakarta Sans, Inter & JetBrains Mono -->
@@ -15,6 +15,10 @@
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin=""/>
           
+    <!-- Leaflet.markercluster CSS (clusters en zonas densas) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+
     <link rel="stylesheet" href="index-v2.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -47,12 +51,35 @@
         <!-- Mapa Interactivo Leaflet -->
         <div id="map"></div>
 
-        <!-- Panel Lateral Informativo (Glassmorphism Sidebar) -->
-        <aside class="sidebar sheet-half" id="station-sidebar" data-sheet-state="half">
-            <div class="sidebar-drag-handle" id="sidebar-drag-handle" title="Arrastrar panel"></div>
+        <!-- Panel Lateral Informativo (Bottom Sheet Tricameral: PEEK / HALF / FULL) -->
+        <aside class="sidebar sheet-peek" id="station-sidebar" data-sheet-state="peek">
+            <!-- Zona táctil de arrastre -->
+            <div class="sidebar-drag-zone" id="sidebar-drag-zone">
+                <div class="sidebar-drag-handle" id="sidebar-drag-handle" title="Deslizar panel"></div>
+                <!-- Franja telemétrica compacta: VISIBLE SOLO EN ESTADO PEEK -->
+                <div class="peek-summary-bar" id="peek-summary-bar">
+                    <div class="peek-chip peek-max">
+                        <span class="peek-icon">🔥</span>
+                        <span class="peek-label">Máx</span>
+                        <strong class="peek-val" id="peek-max-temp">-</strong>
+                        <span class="peek-loc" id="peek-max-loc">-</span>
+                    </div>
+                    <div class="peek-divider"></div>
+                    <div class="peek-chip peek-min">
+                        <span class="peek-icon">❄️</span>
+                        <span class="peek-label">Mín</span>
+                        <strong class="peek-val" id="peek-min-temp">-</strong>
+                        <span class="peek-loc" id="peek-min-loc">-</span>
+                    </div>
+                    <div class="peek-chevron">▲</div>
+                </div>
+            </div>
             <!-- Vista General (Default) -->
             <div class="sidebar-default" id="sidebar-default">
-                <h2>Resumen Meteorológico</h2>
+                <div class="sheet-title-row">
+                    <h2>Resumen Meteorológico</h2>
+                    <button class="sheet-expand-btn" id="btn-toggle-expand" type="button">Ampliar</button>
+                </div>
                 <p class="section-desc">Selecciona cualquier estación en el mapa para ver los datos detallados en tiempo real.</p>
                 
                 <!-- Pronóstico Diario Oficial (IMN) -->
@@ -149,6 +176,12 @@
                     <h4>Sobre las fuentes de datos</h4>
                     <p>Los datos provienen en tiempo real del nodo <strong>WIS2.0 (wis2box)</strong> y la red de estaciones automáticas Campbell RTMC del Instituto Meteorológico Nacional de Costa Rica (IMN). Los datos son preliminares y no cuentan con un control de calidad riguroso.</p>
                     <span class="last-cache-time">Último caché: <span id="last-update-time">Cargando...</span></span>
+                </div>
+
+                <!-- CTA: solo visible en estado HALF -->
+                <div class="sidebar-half-hint" id="sheet-expand-hint" role="button" tabindex="0">
+                    Boletín Oficial IMN · Desliza para abrir
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
                 </div>
             </div>
 
@@ -331,6 +364,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
+    <!-- Leaflet.markercluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="app-v2.js"></script>
 </body>
 </html>

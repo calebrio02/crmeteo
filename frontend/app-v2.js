@@ -35,6 +35,8 @@ function setMobileSheetState(state) {
     sidebar.classList.remove('sheet-peek', 'sheet-half', 'sheet-full');
     sidebar.classList.add(`sheet-${state}`);
     sidebar.dataset.sheetState = state;
+    // Permite al CSS recolocar la atribución Leaflet sobre el borde del sheet
+    document.body.dataset.sheetState = state;
     // Redimensionar gráficas activas una vez termina la transición de altura
     setTimeout(() => {
         if (typeof tempChart !== 'undefined' && tempChart) tempChart.resize();
@@ -44,47 +46,61 @@ function setMobileSheetState(state) {
 
 function initMobileSheetGestures() {
     const sidebar = document.getElementById('station-sidebar');
-    const handle = document.getElementById('sidebar-drag-handle');
-    if (!sidebar || !handle) return;
+    const dragZone = document.getElementById('sidebar-drag-zone') || document.getElementById('sidebar-drag-handle');
+    const expandBtn = document.getElementById('btn-toggle-expand');
+    const hint = document.getElementById('sheet-expand-hint');
+    if (!sidebar || !dragZone) return;
 
     let startY = null;
     let currentY = 0;
     let lastTouchEnd = 0;
 
-    handle.addEventListener('touchstart', (e) => {
+    dragZone.addEventListener('touchstart', (e) => {
         startY = e.touches[0].clientY;
         currentY = startY;
     }, { passive: true });
 
-    handle.addEventListener('touchmove', (e) => {
+    dragZone.addEventListener('touchmove', (e) => {
         currentY = e.touches[0].clientY;
     }, { passive: true });
 
-    handle.addEventListener('touchend', () => {
+    dragZone.addEventListener('touchend', () => {
         if (startY === null) return;
         const deltaY = currentY - startY;
-        const state = sidebar.dataset.sheetState || 'half';
+        const state = sidebar.dataset.sheetState || 'peek';
         startY = null;
         lastTouchEnd = Date.now();
-        if (deltaY < -40) {                       // subir: expandir
+
+        if (deltaY < -35) {                    // deslizar arriba: expandir
             if (state === 'peek') setMobileSheetState('half');
             else if (state === 'half') setMobileSheetState('full');
-        } else if (deltaY > 40) {                  // bajar: contraer
+        } else if (deltaY > 35) {              // deslizar abajo: contraer
             if (state === 'full') setMobileSheetState('half');
             else if (state === 'half') setMobileSheetState('peek');
-        } else if (Math.abs(deltaY) <= 10) {       // toque en el handle: expandir/contraer
-            setMobileSheetState(state === 'half' ? 'full' : 'half');
+        } else if (Math.abs(deltaY) <= 10) {   // tap: ciclar estados
+            if (state === 'peek') setMobileSheetState('half');
+            else if (state === 'half') setMobileSheetState('full');
+            else setMobileSheetState('peek');
         }
-        // movimiento corto ambiguo (10-40px): no hacer nada
     }, { passive: true });
 
     // Click de ratón (desktop con viewport estrecho); ignora el click
     // sintético que el navegador emite tras un gesto táctil
-    handle.addEventListener('click', () => {
-        if (Date.now() - lastTouchEnd < 700) return;
-        const state = sidebar.dataset.sheetState || 'half';
-        setMobileSheetState(state === 'half' ? 'full' : 'half');
+    dragZone.addEventListener('click', () => {
+        if (Date.now() - lastTouchEnd < 600) return;
+        const state = sidebar.dataset.sheetState || 'peek';
+        if (state === 'peek') setMobileSheetState('half');
+        else if (state === 'half') setMobileSheetState('full');
+        else setMobileSheetState('peek');
     });
+
+    if (expandBtn) expandBtn.addEventListener('click', () => setMobileSheetState('full'));
+    if (hint) {
+        hint.addEventListener('click', () => setMobileSheetState('full'));
+        hint.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMobileSheetState('full'); }
+        });
+    }
 }
 
 // Segmented control: Temperatura / Precipitación (móvil)
@@ -130,8 +146,24 @@ function initMap() {
         minZoom: 6
     }).addTo(map);
 
-    // Crear grupo de capas para poder limpiar y redibujar marcadores
-    markerLayerGroup = L.layerGroup().addTo(map);
+    // Grupo de capas con CLUSTERING (118 estaciones; GAM densa: San José/Cartago)
+    markerLayerGroup = L.markerClusterGroup({
+        maxClusterRadius: 36,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        disableClusteringAtZoom: 13,
+        iconCreateFunction: function (cluster) {
+            const count = cluster.getChildCount();
+            return L.divIcon({
+                html: `<div class="custom-cluster-badge"><span>${count}</span></div>`,
+                className: 'marker-cluster-custom',
+                iconSize: [34, 34],
+                iconAnchor: [17, 17]
+            });
+        }
+    });
+    map.addLayer(markerLayerGroup);
 
     // Cerrar el panel de detalle y mostrar resumen nacional al hacer clic en el fondo del mapa
     map.on('click', () => {
@@ -225,12 +257,25 @@ function updateUI() {
     // 5. Actualizar sección lateral de vista general
     document.getElementById('max-temp-val').innerText = maxTemp !== -999 ? `${maxTemp.toFixed(1)} °C` : 'N/A';
     document.getElementById('max-temp-loc').innerText = maxTempStation || '-';
+    document.getElementById('max-temp-loc').title = maxTempStation || '';
 
     document.getElementById('min-temp-val').innerText = minTemp !== 999 ? `${minTemp.toFixed(1)} °C` : 'N/A';
     document.getElementById('min-temp-loc').innerText = minTempStation || '-';
+    document.getElementById('min-temp-loc').title = minTempStation || '';
 
     document.getElementById('max-wind-val').innerText = maxWind !== -999 ? `${maxWind.toFixed(1)} km/h` : 'N/A';
     document.getElementById('max-wind-loc').innerText = maxWindStation || '-';
+    document.getElementById('max-wind-loc').title = maxWindStation || '';
+
+    // Franja telemétrica PEEK (móvil)
+    const peekMax = document.getElementById('peek-max-temp');
+    if (peekMax) peekMax.innerText = maxTemp !== -999 ? `${maxTemp.toFixed(1)}°` : '--';
+    const peekMaxLoc = document.getElementById('peek-max-loc');
+    if (peekMaxLoc) { peekMaxLoc.innerText = maxTempStation || '-'; peekMaxLoc.title = maxTempStation || ''; }
+    const peekMin = document.getElementById('peek-min-temp');
+    if (peekMin) peekMin.innerText = minTemp !== 999 ? `${minTemp.toFixed(1)}°` : '--';
+    const peekMinLoc = document.getElementById('peek-min-loc');
+    if (peekMinLoc) { peekMinLoc.innerText = minTempStation || '-'; peekMinLoc.title = minTempStation || ''; }
 
     // Formatear hora de última actualización
     const cacheTime = new Date();
@@ -484,10 +529,9 @@ function showStationDetails(station) {
     const detailPanel = document.getElementById('sidebar-detail');
     detailPanel.classList.remove('hidden');
 
-    // Móvil: si la hoja estaba en PEEK, expandir a HALF; resetear tab de gráfica a Temperatura
+    // Móvil: abrir DIRECTO en FULL para que la gráfica horaria quede en el 1er fold
     if (window.innerWidth <= 768) {
-        const sb = document.getElementById('station-sidebar');
-        if (sb && sb.dataset.sheetState === 'peek') setMobileSheetState('half');
+        setMobileSheetState('full');
         const bt = document.getElementById('btn-tab-temp');
         const br = document.getElementById('btn-tab-rain');
         if (bt && br) {
@@ -732,6 +776,11 @@ function closeDetailSidebar() {
 
     document.getElementById('sidebar-detail').classList.add('hidden');
     document.getElementById('sidebar-default').classList.remove('hidden');
+
+    // Móvil: regresar al estado HERO (PEEK) para recuperar el mapa
+    if (window.innerWidth <= 768) {
+        setMobileSheetState('peek');
+    }
 }
 
 // Inicializar el reproductor de audio personalizado para el pronóstico nacional
