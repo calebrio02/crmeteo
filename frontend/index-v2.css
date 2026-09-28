@@ -664,6 +664,11 @@ body {
     height: 145px;
 }
 
+/* Segmented control de gráficas: solo existe en mobile (media query lo muestra) */
+.chart-tab-bar {
+    display: none;
+}
+
 .extremes-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1271,54 +1276,400 @@ body {
    Responsive styling
    ------------------------------------------------------------- */
 @media (max-width: 768px) {
+    /* =========================================================
+       1. HEADER FLOTANTE COMPACTO & DESPEJE DE LEAFLET
+       ========================================================= */
     .app-header {
-        left: 12px;
-        right: 12px;
-        top: 12px;
-        padding: 8px 14px;
-        width: calc(100% - 24px);
+        left: 10px;
+        right: 10px;
+        top: 10px;
+        height: 48px;
+        padding: 6px 12px;
+        width: calc(100% - 20px);
         justify-content: space-between;
-        gap: 14px;
+        gap: 8px;
+        border-radius: 12px;
+        background: rgba(10, 15, 29, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        z-index: 1000;
     }
+
+    .header-logo { gap: 8px; }
+
+    .weather-icon-primary { width: 22px; height: 22px; }
+
+    .logo-text h1 { font-size: 1.05rem; letter-spacing: -0.3px; }
+
+    /* Subtítulo largo fuera en mobile (evita salto de línea) */
+    .logo-text span { display: none; }
 
     .header-stats {
-        display: flex;
-        gap: 14px;
-        padding-left: 14px;
+        gap: 12px;
+        padding-left: 10px;
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    .bubble-label {
-        font-size: 0.55rem;
-    }
+    .bubble-label { font-size: 0.50rem; letter-spacing: 0.3px; }
 
     .bubble-val {
-        font-size: 0.95rem;
+        font-size: 0.88rem;
+        font-weight: 700;
+        font-family: var(--font-header);
     }
 
-    /* Sidebar como Bottom Sheet desplegable */
+    /* Header termina en y=58px -> zoom a y=68px deja 10px libres */
+    .leaflet-control-zoom {
+        margin-top: 68px !important;
+        margin-left: 10px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .leaflet-bar a {
+        width: 32px !important;
+        height: 32px !important;
+        line-height: 30px !important;
+        font-size: 16px !important;
+    }
+
+    /* =========================================================
+       2. BOTTOM SHEET TRICAMERAL (PEEK / HALF / FULL)
+       ========================================================= */
     .sidebar {
         left: 0;
         right: 0;
         bottom: 0;
         width: 100%;
         top: auto;
-        height: 55vh;
-        max-height: 80vh;
         border-radius: 20px 20px 0 0;
-        padding: 20px 18px;
+        padding: 12px 16px 20px 16px;
+        background: rgba(10, 15, 29, 0.88);
+        backdrop-filter: blur(28px) saturate(190%);
+        -webkit-backdrop-filter: blur(28px) saturate(190%);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-bottom: none;
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.65);
+        z-index: 1000;
+        transition: height 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        height: 46vh;
+        max-height: 46vh;
+    }
+
+    .sidebar.sheet-peek {
+        height: 108px !important;
+        max-height: 108px !important;
+        overflow: hidden;
+    }
+
+    .sidebar.sheet-full {
+        height: calc(100vh - 64px) !important;
+        max-height: calc(100vh - 64px) !important;
     }
 
     .sidebar-drag-handle {
         display: block;
+        width: 44px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 3px;
+        margin: 0 auto 10px auto;
+        cursor: pointer;
     }
 
+    /* =========================================================
+       3. JERARQUÍA DEL FOLD: RESUMEN (VISTA POR DEFECTO)
+       ========================================================= */
+    .sidebar-default {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar-default h2 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 2px;
+        order: 1;
+    }
+
+    .section-desc { display: none; }
+
+    /* Los 3 extremos nacionales pasan a grilla horizontal de 3 columnas */
+    .summary-cards {
+        order: 2;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-top: 8px;
+        margin-bottom: 10px;
+    }
+
+    .summary-card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 8px;
+        gap: 2px;
+        min-height: 72px;
+        border-radius: 10px;
+        background: rgba(18, 26, 47, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .card-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        margin-bottom: 2px;
+    }
+
+    .card-icon svg { width: 15px; height: 15px; }
+
+    .card-details h3 {
+        font-size: 0.54rem;
+        letter-spacing: 0.3px;
+        margin-bottom: 1px;
+    }
+
+    .card-value {
+        font-size: 1.02rem;
+        font-family: var(--font-header);
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .card-sub {
+        font-size: 0.56rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 95px;
+    }
+
+    /* Cápsula compacta del Pronóstico Diario Nacional (IMN) */
+    .national-forecast-card {
+        order: 3;
+        margin-top: 0;
+        margin-bottom: 8px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.025);
+    }
+
+    .forecast-header { margin-bottom: 4px; }
+
+    .forecast-badge { font-size: 0.52rem; letter-spacing: 0.5px; }
+
+    .forecast-header h3 { font-size: 0.92rem; }
+
+    .forecast-date { font-size: 0.68rem; margin: 0 0 6px 0; }
+
+    /* Reproductor de audio en una sola línea */
+    .forecast-audio-player {
+        padding: 6px 8px;
+        gap: 8px;
+        margin-bottom: 6px;
+        border-radius: 8px;
+    }
+
+    .audio-play-btn {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+    }
+
+    .audio-play-btn svg { width: 14px; height: 14px; }
+
+    .audio-time-current,
+    .audio-time-total {
+        font-size: 0.58rem;
+        min-width: 22px;
+    }
+
+    /* Volumen: los botones físicos del teléfono ya lo controlan */
+    .audio-volume-wrap { display: none; }
+
+    /* Texto del pronóstico: preview de 2 líneas en HALF, completo en FULL */
+    .forecast-body {
+        max-height: 52px;
+        padding: 6px 8px;
+        font-size: 0.72rem;
+        line-height: 1.35;
+    }
+
+    .sidebar.sheet-full .forecast-body { max-height: 160px; }
+
+    .data-source-info {
+        order: 4;
+        padding-top: 10px;
+    }
+
+    /* =========================================================
+       4. VISTA DETALLE COMPACTADA (ESTACIÓN SELECCIONADA)
+       ========================================================= */
+    .sidebar-detail { position: relative; }
+
+    /* Botón de cierre anclado, circular, sin colisionar con el radio */
     .btn-close {
-        top: 16px;
-        right: 16px;
+        top: 2px;
+        right: 2px;
+        width: 32px;
+        height: 32px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
         z-index: 10;
+        padding: 0;
     }
 
-    .leaflet-control-zoom {
-        margin-top: 80px !important;
+    .btn-close svg { width: 16px; height: 16px; }
+
+    .station-meta-card-premium {
+        padding: 10px 12px;
+        margin-bottom: 10px;
+        border-radius: 12px;
+    }
+
+    .meta-top-row {
+        margin-bottom: 4px;
+        padding-right: 32px;
+    }
+
+    .badge-premium { font-size: 0.58rem; padding: 2px 8px; }
+
+    .source-tag { font-size: 0.58rem; }
+
+    .station-meta-card-premium h2 {
+        font-size: 1.10rem;
+        margin-bottom: 4px;
+        line-height: 1.25;
+    }
+
+    .station-geo-details-premium {
+        gap: 8px;
+        padding-top: 6px;
+        font-size: 0.65rem;
+    }
+
+    .weather-panel-card {
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        border-radius: 12px;
+    }
+
+    .panel-header { font-size: 0.65rem; margin-bottom: 6px; }
+
+    .temp-panel-premium .panel-main-temp { margin-bottom: 6px; }
+
+    .temp-big-num { font-size: 2.2rem; }
+
+    .temp-big-deg { font-size: 1.2rem; }
+
+    .chart-wrapper {
+        margin-top: 6px;
+        margin-bottom: 6px;
+        padding: 8px;
+        border-radius: 8px;
+    }
+
+    .chart-label { font-size: 0.58rem; margin-bottom: 4px; }
+
+    .chart-container { height: 105px !important; }
+
+    .extremes-grid { gap: 6px; margin-top: 6px; }
+
+    .extreme-box { padding: 6px 8px; border-radius: 6px; }
+
+    .ext-label { font-size: 0.55rem; }
+
+    .ext-val { font-size: 0.90rem; }
+
+    .wind-dashboard-body { gap: 10px; }
+
+    .wind-value { font-size: 1.15rem; }
+
+    .compass-dial { width: 64px; height: 64px; }
+
+    .dial-cardinal { font-size: 0.44rem; }
+
+    .dial-cardinal.n { font-size: 0.48rem; }
+
+    .compass-needle-premium { width: 3px; height: 30px; }
+
+    .compass-heading { font-size: 0.65rem; padding: 1px 6px; }
+
+    .rain-metrics-grid { gap: 4px; margin-top: 6px; }
+
+    .rain-metric-box { padding: 6px 4px; border-radius: 6px; }
+
+    .rain-lbl { font-size: 0.52rem; }
+
+    .rain-metric-box .rain-val { font-size: 0.90rem; }
+
+    .sensor-double-row { gap: 8px; margin-bottom: 8px; }
+
+    .sensor-card { padding: 10px; border-radius: 10px; }
+
+    .sensor-header { font-size: 0.58rem; margin-bottom: 4px; }
+
+    .sensor-val { font-size: 1.25rem; }
+
+    .humidity-progress-bar { height: 3px; margin-top: 4px; }
+
+    .diagnostics-row { padding-top: 0; }
+
+    .diag-label { font-size: 0.70rem; }
+
+    .diag-val { font-size: 0.92rem; }
+
+    .update-stamp-premium {
+        font-size: 0.58rem;
+        padding-top: 8px;
+        padding-bottom: 4px;
+        margin-top: 8px;
+    }
+
+    /* =========================================================
+       5. SEGMENTED CONTROL DE GRÁFICAS (TEMP / LLUVIA)
+       Solo en mobile: los dos canvas comparten una misma bahía
+       ========================================================= */
+    .chart-tab-bar {
+        display: flex;
+        gap: 4px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 3px;
+        margin-bottom: 8px;
+    }
+
+    .chart-tab-btn {
+        flex: 1;
+        padding: 7px 8px;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: var(--font-header);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+    }
+
+    .chart-tab-btn.active {
+        background: rgba(6, 182, 212, 0.18);
+        color: var(--accent-cyan);
+        box-shadow: inset 0 0 0 1px rgba(6, 182, 212, 0.35);
+    }
+
+    .sidebar-detail[data-chart-tab="temp"] .rain-panel-premium,
+    .sidebar-detail[data-chart-tab="rain"] .temp-panel-premium {
+        display: none;
     }
 }

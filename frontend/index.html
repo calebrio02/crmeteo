@@ -48,8 +48,8 @@
         <div id="map"></div>
 
         <!-- Panel Lateral Informativo (Glassmorphism Sidebar) -->
-        <aside class="sidebar" id="station-sidebar">
-            <div class="sidebar-drag-handle"></div>
+        <aside class="sidebar sheet-half" id="station-sidebar" data-sheet-state="half">
+            <div class="sidebar-drag-handle" id="sidebar-drag-handle" title="Arrastrar panel"></div>
             <!-- Vista General (Default) -->
             <div class="sidebar-default" id="sidebar-default">
                 <h2>Resumen Meteorológico</h2>
@@ -153,7 +153,7 @@
             </div>
 
             <!-- Vista Detallada de Estación (Dashboard Moderno) -->
-            <div class="sidebar-detail hidden" id="sidebar-detail">
+            <div class="sidebar-detail hidden" id="sidebar-detail" data-chart-tab="temp">
                 <button class="btn-close" id="btn-close-sidebar">
                     <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
@@ -170,6 +170,12 @@
                         <div class="geo-item">Lon: <strong id="det-lon" class="font-mono">-</strong></div>
                         <div class="geo-item">Alt: <strong id="det-alt" class="font-mono">-</strong> msnm</div>
                     </div>
+                </div>
+
+                <!-- Switch de gráfico (solo visible en mobile) -->
+                <div class="chart-tab-bar" id="chart-tab-bar">
+                    <button class="chart-tab-btn active" id="btn-tab-temp" type="button">Temperatura</button>
+                    <button class="chart-tab-btn" id="btn-tab-rain" type="button">Precipitación</button>
                 </div>
 
                 <!-- Panel: Temperatura Actual y Gráfico -->

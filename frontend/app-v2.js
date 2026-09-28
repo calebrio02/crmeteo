@@ -20,7 +20,93 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicializar reproductor de audio del pronóstico
     initForecastAudioPlayer();
+
+    // Gestos del bottom sheet (móvil) y segmented control de gráficas
+    initMobileSheetGestures();
+    initChartTabs();
 });
+
+// =============================================================
+// BOTTOM SHEET TRICAMERAL (PEEK / HALF / FULL) — solo móvil
+// =============================================================
+function setMobileSheetState(state) {
+    const sidebar = document.getElementById('station-sidebar');
+    if (!sidebar) return;
+    sidebar.classList.remove('sheet-peek', 'sheet-half', 'sheet-full');
+    sidebar.classList.add(`sheet-${state}`);
+    sidebar.dataset.sheetState = state;
+    // Redimensionar gráficas activas una vez termina la transición de altura
+    setTimeout(() => {
+        if (typeof tempChart !== 'undefined' && tempChart) tempChart.resize();
+        if (typeof rainChart !== 'undefined' && rainChart) rainChart.resize();
+    }, 360);
+}
+
+function initMobileSheetGestures() {
+    const sidebar = document.getElementById('station-sidebar');
+    const handle = document.getElementById('sidebar-drag-handle');
+    if (!sidebar || !handle) return;
+
+    let startY = null;
+    let currentY = 0;
+    let lastTouchEnd = 0;
+
+    handle.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        currentY = startY;
+    }, { passive: true });
+
+    handle.addEventListener('touchmove', (e) => {
+        currentY = e.touches[0].clientY;
+    }, { passive: true });
+
+    handle.addEventListener('touchend', () => {
+        if (startY === null) return;
+        const deltaY = currentY - startY;
+        const state = sidebar.dataset.sheetState || 'half';
+        startY = null;
+        lastTouchEnd = Date.now();
+        if (deltaY < -40) {                       // subir: expandir
+            if (state === 'peek') setMobileSheetState('half');
+            else if (state === 'half') setMobileSheetState('full');
+        } else if (deltaY > 40) {                  // bajar: contraer
+            if (state === 'full') setMobileSheetState('half');
+            else if (state === 'half') setMobileSheetState('peek');
+        } else if (Math.abs(deltaY) <= 10) {       // toque en el handle: expandir/contraer
+            setMobileSheetState(state === 'half' ? 'full' : 'half');
+        }
+        // movimiento corto ambiguo (10-40px): no hacer nada
+    }, { passive: true });
+
+    // Click de ratón (desktop con viewport estrecho); ignora el click
+    // sintético que el navegador emite tras un gesto táctil
+    handle.addEventListener('click', () => {
+        if (Date.now() - lastTouchEnd < 700) return;
+        const state = sidebar.dataset.sheetState || 'half';
+        setMobileSheetState(state === 'half' ? 'full' : 'half');
+    });
+}
+
+// Segmented control: Temperatura / Precipitación (móvil)
+function initChartTabs() {
+    const detail = document.getElementById('sidebar-detail');
+    const btnTemp = document.getElementById('btn-tab-temp');
+    const btnRain = document.getElementById('btn-tab-rain');
+    if (!detail || !btnTemp || !btnRain) return;
+
+    const select = (tab) => {
+        detail.dataset.chartTab = tab;
+        btnTemp.classList.toggle('active', tab === 'temp');
+        btnRain.classList.toggle('active', tab === 'rain');
+        setTimeout(() => {
+            if (tab === 'temp' && typeof tempChart !== 'undefined' && tempChart) tempChart.resize();
+            if (tab === 'rain' && typeof rainChart !== 'undefined' && rainChart) rainChart.resize();
+        }, 60);
+    };
+
+    btnTemp.addEventListener('click', () => select('temp'));
+    btnRain.addEventListener('click', () => select('rain'));
+}
 
 // Inicializar mapa de Leaflet
 function initMap() {
@@ -397,6 +483,19 @@ function showStationDetails(station) {
     document.getElementById('sidebar-default').classList.add('hidden');
     const detailPanel = document.getElementById('sidebar-detail');
     detailPanel.classList.remove('hidden');
+
+    // Móvil: si la hoja estaba en PEEK, expandir a HALF; resetear tab de gráfica a Temperatura
+    if (window.innerWidth <= 768) {
+        const sb = document.getElementById('station-sidebar');
+        if (sb && sb.dataset.sheetState === 'peek') setMobileSheetState('half');
+        const bt = document.getElementById('btn-tab-temp');
+        const br = document.getElementById('btn-tab-rain');
+        if (bt && br) {
+            detailPanel.dataset.chartTab = 'temp';
+            bt.classList.add('active');
+            br.classList.remove('active');
+        }
+    }
 
     // 1. Cargar Metadatos de la Estación
     document.getElementById('station-badge').innerText = station.source;
